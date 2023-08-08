@@ -604,7 +604,7 @@ fun_match_similarity <- function(
     }
     
     list_similarity <- NULL
-    dbl_similarity <- NULL
+    mtx_similarity <- NULL
     
   } else {
     
@@ -645,7 +645,7 @@ fun_match_similarity <- function(
       list_similarity %>%
         bind_cols() %>%
         as.matrix() ->
-        dbl_similarity
+        mtx_similarity
       
       if(length(chr_id_col)){
         
@@ -654,17 +654,17 @@ fun_match_similarity <- function(
         df_data_rows %>%
           pull(!!sym(chr_id_col)) ->
           colnames(
-            dbl_similarity
+            mtx_similarity
           )
         
         colnames(
-          dbl_similarity
+          mtx_similarity
         ) -> rownames(
-          dbl_similarity
+          mtx_similarity
         )
         
         colnames(
-          dbl_similarity
+          mtx_similarity
         ) -> names(
           list_similarity
         )
@@ -681,7 +681,7 @@ fun_match_similarity <- function(
   return(compact(list(
     'df_similarity' = df_data_rows
     , 'list_similarity' = list_similarity
-    , 'dbl_similarity' = dbl_similarity
+    , 'mtx_similarity' = mtx_similarity
   )))
   
 }
