@@ -618,7 +618,6 @@ fun_match_similarity <- function(
       map(
         ~ fun_match_similarity_cols(
           df_data_cols = df_data_cols
-          # , dbl_query = as.numeric(.x)
           , dbl_query = as.matrix(.x)
           , chr_method = chr_method
           , dbl_scale_ub = dbl_scale_ub
