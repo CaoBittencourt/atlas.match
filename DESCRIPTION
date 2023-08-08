@@ -1,0 +1,12 @@
+Package: atlas.match
+Type: Package
+Title: Quantitative Career Matching
+Version: 0.1.0
+Author: Cao Bittencourt Ferreira
+Maintainer: Cao Bittencourt Ferreira <caobittencourt@gmail.com>
+Description: Includes various methods for estimating similarity coefficients between numeric professional profiles.
+Depends: bvls, fastglm, weights, dplyr, tidyr, purrr, atlas.eqvl
+Remotes: github::CaoBittencourtFerreira/atlas.eqvl
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
