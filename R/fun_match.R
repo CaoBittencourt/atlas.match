@@ -1,24 +1,24 @@
-# [SETUP] -----------------------------------------------------------------
-# - Packages ----------------------------------------------------------------
-pkg <- c(
-  'bvls'
-  , 'fastglm'
-  , 'weights'
-  # , 'atlas.eqvl' #Equivalence coefficient
-  , 'dplyr', 'tidyr', 'purrr' #Data wrangling
-  , 'atlas.eqvl' #Equivalence coefficient
-  # , 'vctrs' #Data wrangling
-  # , 'modeest' #Mode
-)
-
-# Activate / install packages
-lapply(pkg, function(x)
-  if(!require(x, character.only = T))
-  {install.packages(x); require(x)})
-
-# Package citation
+# # [SETUP] -----------------------------------------------------------------
+# # - Packages ----------------------------------------------------------------
+# pkg <- c(
+#   'bvls'
+#   , 'fastglm'
+#   , 'weights'
+#   # , 'atlas.eqvl' #Equivalence coefficient
+#   , 'dplyr', 'tidyr', 'purrr' #Data wrangling
+#   , 'atlas.eqvl' #Equivalence coefficient
+#   # , 'vctrs' #Data wrangling
+#   # , 'modeest' #Mode
+# )
+# 
+# # Activate / install packages
 # lapply(pkg, function(x)
-#   {citation(package = x)})
+#   if(!require(x, character.only = T))
+#   {install.packages(x); require(x)})
+# 
+# # Package citation
+# # lapply(pkg, function(x)
+# #   {citation(package = x)})
 
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
