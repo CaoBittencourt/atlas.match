@@ -689,7 +689,6 @@ fun_match_similarity <- function(
 # # [TEST] ------------------------------------------------------------------
 # # - Data ------------------------------------------------------------------
 # library(readr)
-# library(tictoc)
 # 
 # read_rds(
 #   'C:/Users/Cao/Documents/Github/atlas-research/data/efa_model_equamax_15_factors.rds'
@@ -704,112 +703,76 @@ fun_match_similarity <- function(
 # ) -> df_input
 # 
 # # - Regression weights 1 ----------------------------------------------------
-# tic()
 # fun_match_weights(
 #   dbl_var = runif(50, 0, 100)
 # )
-# toc()
 # 
 # # - Regression weights 2 --------------------------------------------------
-# tic()
 # fun_match_vweights(
-#   df_data = 
-#     df_occupations %>% 
-#     select(ends_with('.l')) %>% 
-#     t() %>% 
+#   df_data =
+#     df_occupations %>%
+#     select(ends_with('.l')) %>%
+#     t() %>%
 #     as_tibble()
 # )
-# toc()
 # 
 # # - BVLS similarity test ------------------------------------------------------------------
-# rm(dsds)
-# 
-# tic()
 # fun_match_similarity(
-#   df_data_rows = 
-#     df_occupations %>% 
+#   df_data_rows =
+#     df_occupations %>%
 #     select(
 #       occupation
 #       , ends_with('.l')
 #     )
 #   , chr_method = 'bvls'
-#   , df_query_rows = 
+#   , df_query_rows =
 #     df_input
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-# ) -> dsds
-# toc()
-# 
-# dsds$
-#   df_similarity %>% 
-#   select(!ends_with('.l')) %>% 
-#   arrange(desc(similarity)) %>% 
-#   print(n = nrow(.))
+# )
 # 
 # # - Pearson similarity test ------------------------------------------------------------------
-# rm(dsds)
-# 
 # tic()
 # fun_match_similarity(
-#   df_data_rows = 
-#     df_occupations %>% 
+#   df_data_rows =
+#     df_occupations %>%
 #     select(
 #       occupation
 #       , ends_with('.l')
 #     )
 #   , chr_method = 'pearson'
-#   , df_query_rows = 
+#   , df_query_rows =
 #     df_input
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-# ) -> dsds
-# toc()
-# 
-# dsds$
-#   df_similarity %>% 
-#   select(!ends_with('.l')) %>% 
-#   arrange(desc(similarity)) %>% 
-#   print(n = nrow(.))
+# )
 # 
 # # - Logit similarity test ------------------------------------------------------------------
-# rm(dsds)
-# 
-# tic()
 # fun_match_similarity(
-#   df_data_rows = 
-#     df_occupations %>% 
+#   df_data_rows =
+#     df_occupations %>%
 #     select(
 #       occupation
 #       , ends_with('.l')
 #     )
 #   , chr_method = 'logit'
-#   , df_query_rows = 
+#   , df_query_rows =
 #     df_input
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-# ) -> dsds
-# toc()
-# 
-# dsds$
-#   df_similarity %>% 
-#   select(!ends_with('.l')) %>% 
-#   arrange(desc(similarity)) %>% 
-#   print(n = nrow(.))
+# )
 # 
 # # - Similarity matrix test ------------------------------------------------
-# rm(dsds)
-# 
-# tic()
 # fun_match_similarity(
-#   df_data_rows = 
-#     df_occupations %>% 
+#   df_data_rows =
+#     df_occupations %>%
 #     slice(1:10) %>%
 #     select(
 #       occupation
 #       , ends_with('.l')
 #     )
-#   , df_query_rows = 
-#     df_occupations %>% 
+#   , df_query_rows =
+#     df_occupations %>%
 #     slice(1:10) %>%
 #     select(
 #       occupation
@@ -818,10 +781,6 @@ fun_match_similarity <- function(
 #   , chr_method = 'bvls'
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-#   , chr_id_col = 
+#   , chr_id_col =
 #     'occupation'
-# ) -> dsds
-# toc()
-# 
-# dsds
-# 
+# )
