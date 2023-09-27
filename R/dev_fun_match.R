@@ -1,24 +1,79 @@
-# # [SETUP] -----------------------------------------------------------------
-# # - Packages ----------------------------------------------------------------
-# pkg <- c(
-#   'bvls'
-#   , 'fastglm'
-#   , 'weights'
-#   # , 'atlas.eqvl' #Equivalence coefficient
-#   , 'dplyr', 'tidyr', 'purrr' #Data wrangling
-#   , 'atlas.eqvl' #Equivalence coefficient
-#   # , 'vctrs' #Data wrangling
-#   # , 'modeest' #Mode
-# )
-# 
-# # Activate / install packages
+# [SETUP] -----------------------------------------------------------------
+# - Packages ----------------------------------------------------------------
+# CRAN packages
+pkg <- c(
+  'bvls'
+  , 'fastglm'
+  , 'weights'
+  , 'dplyr', 'tidyr', 'purrr' #Data wrangling
+)
+
+# Git packages
+chr_git <- c(
+  'CaoBittencourt' = 'atlas.kind', #Human capital indispensability coefficient
+)
+
+# Activate / install CRAN packages
+lapply(
+  chr_pkg
+  , function(pkg){
+    
+    if(!require(pkg, character.only = T)){
+      
+      install.packages(pkg)
+      
+    }
+    
+    require(pkg, character.only = T)
+    
+  }
+)
+
+# Activate / install Git packages
+Map(
+  function(git, profile){
+    
+    if(!require(git, character.only = T)){
+      
+      install_github(
+        paste0(profile, '/', git)
+        , upgrade = F
+        , force = T
+      )
+      
+    }
+    
+    require(git, character.only = T)
+    
+  }
+  , git = chr_git
+  , profile = names(chr_git)
+)
+
+chr_pkg <- c(
+  'devtools' #GitHub packages
+)
+
+# - Packages ----------------------------------------------------------------
+pkg <- c(
+  'bvls'
+  , 'fastglm'
+  , 'weights'
+  # , 'atlas.eqvl' #Equivalence coefficient
+  , 'dplyr', 'tidyr', 'purrr' #Data wrangling
+  , 'atlas.eqvl' #Equivalence coefficient
+  # , 'vctrs' #Data wrangling
+  # , 'modeest' #Mode
+)
+
+# Activate / install packages
+lapply(pkg, function(x)
+  if(!require(x, character.only = T))
+  {install.packages(x); require(x)})
+
+# Package citation
 # lapply(pkg, function(x)
-#   if(!require(x, character.only = T))
-#   {install.packages(x); require(x)})
-# 
-# # Package citation
-# # lapply(pkg, function(x)
-# #   {citation(package = x)})
+#   {citation(package = x)})
 
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
