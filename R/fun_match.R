@@ -287,14 +287,14 @@ fun_match_logit <- function(
   list_c(map(
     .x = as.integer(dbl_query[,])
     , ~ rep(
-      c(1,0), times = c(
+      c(1,0), times = ceiling(c(
         .x, (dbl_scale_ub - dbl_scale_lb) - .x
-      )
+      ))
     )
   )) -> int_query_bernoulli
   
   rm(dbl_query)
-  
+
   # Convert data to a Bernoulli variable
   map(
     .x = df_data_cols
@@ -302,9 +302,9 @@ fun_match_logit <- function(
       as.matrix(list_c(map(
         .x = as.integer(.x)
         , ~ rep(
-          c(1,0), times = c(
+          c(1,0), times = ceiling(c(
             .x, (dbl_scale_ub - dbl_scale_lb) - .x
-          )
+          )) 
         )
       )))
   ) -> list_data_bernoulli
@@ -688,19 +688,14 @@ fun_match_similarity <- function(
 
 # # [TEST] ------------------------------------------------------------------
 # # - Data ------------------------------------------------------------------
-# library(readr)
+# # Occupations data frame
+# df_occupations <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_occupations_2023_efa.csv')
 # 
-# read_rds(
-#   'C:/Users/Cao/Documents/Github/atlas-research/data/efa_model_equamax_15_factors.rds'
-# ) -> efa_model
+# # My own professional profile
+# df_input <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSj7u2N59j8MTa7MZqk2Y-VDVWIWEDzAR_0gkb_jB_pBX4sm8yMS1N26ClmY6iWXA/pub?gid=145103706&single=true&output=csv')
 # 
-# read_csv(
-#   'C:/Users/Cao/Documents/Github/Atlas-Research/Data/df_atlas_complete_equamax_15_factors.csv'
-# ) -> df_occupations
-# 
-# read_csv(
-#   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSVdXvQMe4DrKS0LKhY0CZRlVuCCkEMHVJHQb_U-GKF21CjcchJ5jjclGSlQGYa5Q/pub?gid=1515296378&single=true&output=csv'
-# ) -> df_input
+# # Factor model
+# efa_model <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/efa_equamax_14factors.rds')
 # 
 # # - Regression weights 1 ----------------------------------------------------
 # fun_match_weights(
@@ -711,7 +706,7 @@ fun_match_similarity <- function(
 # fun_match_vweights(
 #   df_data =
 #     df_occupations %>%
-#     select(ends_with('.l')) %>%
+#     select(starts_with('item_')) %>%
 #     t() %>%
 #     as_tibble()
 # )
@@ -722,30 +717,39 @@ fun_match_similarity <- function(
 #     df_occupations %>%
 #     select(
 #       occupation
-#       , ends_with('.l')
+#       , starts_with('item_')
 #     )
 #   , chr_method = 'bvls'
 #   , df_query_rows =
 #     df_input
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-# )
+#   , lgc_sort = T
+# )[[1]] %>% 
+#   select(
+#     occupation,
+#     similarity
+#   )
 # 
 # # - Pearson similarity test ------------------------------------------------------------------
-# tic()
 # fun_match_similarity(
 #   df_data_rows =
 #     df_occupations %>%
 #     select(
 #       occupation
-#       , ends_with('.l')
+#       , starts_with('item_')
 #     )
 #   , chr_method = 'pearson'
 #   , df_query_rows =
 #     df_input
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-# )
+#   , lgc_sort = T
+# )[[1]] %>% 
+#   select(
+#     occupation,
+#     similarity
+#   )
 # 
 # # - Logit similarity test ------------------------------------------------------------------
 # fun_match_similarity(
@@ -753,14 +757,19 @@ fun_match_similarity <- function(
 #     df_occupations %>%
 #     select(
 #       occupation
-#       , ends_with('.l')
+#       , starts_with('item_')
 #     )
 #   , chr_method = 'logit'
 #   , df_query_rows =
 #     df_input
 #   , dbl_scale_ub = 100
 #   , dbl_scale_lb = 0
-# )
+#   , lgc_sort = T
+# )[[1]] %>% 
+#   select(
+#     occupation,
+#     similarity
+#   )
 # 
 # # - Similarity matrix test ------------------------------------------------
 # fun_match_similarity(
@@ -769,14 +778,14 @@ fun_match_similarity <- function(
 #     slice(1:10) %>%
 #     select(
 #       occupation
-#       , ends_with('.l')
+#       , starts_with('item_')
 #     )
 #   , df_query_rows =
 #     df_occupations %>%
 #     slice(1:10) %>%
 #     select(
 #       occupation
-#       , ends_with('.l')
+#       , starts_with('item_')
 #     )
 #   , chr_method = 'bvls'
 #   , dbl_scale_ub = 100
