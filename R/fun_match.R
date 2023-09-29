@@ -1,55 +1,55 @@
-# [SETUP] -----------------------------------------------------------------
-# - Packages ----------------------------------------------------------------
-# CRAN packages
-chr_pkg <- c(
-  'bvls', 'fastglm', 'weights' #Regression models
-  , 'devtools' #GitHub packages (temp)
-  , 'readr' #Read data (temp)
-  , 'dplyr', 'tidyr', 'purrr' #Data wrangling
-)
-
-# Git packages
-chr_git <- c(
-  'CaoBittencourt' = 'atlas.kind' #Human capital indispensability coefficient
-)
-
-# Activate / install CRAN packages
-lapply(
-  chr_pkg
-  , function(pkg){
-
-    if(!require(pkg, character.only = T)){
-
-      install.packages(pkg)
-
-    }
-
-    require(pkg, character.only = T)
-
-  }
-)
-
-# Activate / install Git packages
-Map(
-  function(git, profile){
-
-    if(!require(git, character.only = T)){
-
-      install_github(
-        paste0(profile, '/', git)
-        , upgrade = F
-        , force = T
-      )
-
-    }
-
-    require(git, character.only = T)
-
-  }
-  , git = chr_git
-  , profile = names(chr_git)
-)
-
+# # [SETUP] -----------------------------------------------------------------
+# # - Packages ----------------------------------------------------------------
+# # CRAN packages
+# chr_pkg <- c(
+#   'bvls', 'fastglm', 'weights' #Regression models
+#   , 'devtools' #GitHub packages (temp)
+#   , 'readr' #Read data (temp)
+#   , 'dplyr', 'tidyr', 'purrr' #Data wrangling
+# )
+# 
+# # Git packages
+# chr_git <- c(
+#   'CaoBittencourt' = 'atlas.kind' #Human capital indispensability coefficient
+# )
+# 
+# # Activate / install CRAN packages
+# lapply(
+#   chr_pkg
+#   , function(pkg){
+# 
+#     if(!require(pkg, character.only = T)){
+# 
+#       install.packages(pkg)
+# 
+#     }
+# 
+#     require(pkg, character.only = T)
+# 
+#   }
+# )
+# 
+# # Activate / install Git packages
+# Map(
+#   function(git, profile){
+# 
+#     if(!require(git, character.only = T)){
+# 
+#       install_github(
+#         paste0(profile, '/', git)
+#         , upgrade = F
+#         , force = T
+#       )
+# 
+#     }
+# 
+#     require(git, character.only = T)
+# 
+#   }
+#   , git = chr_git
+#   , profile = names(chr_git)
+# )
+# 
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
 fun_match_weights <- function(dbl_var){
@@ -793,197 +793,197 @@ fun_match_similarity <- function(
   
 }
 
-# [TEST] ------------------------------------------------------------------
-# - Data ------------------------------------------------------------------
-# Occupations data frame
-df_occupations <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_occupations_2023_efa.csv')
-df_occupations_old <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_atlas_complete_equamax_15_factors.csv')
-
-
-# My own professional profile
-df_input <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSj7u2N59j8MTa7MZqk2Y-VDVWIWEDzAR_0gkb_jB_pBX4sm8yMS1N26ClmY6iWXA/pub?gid=145103706&single=true&output=csv')
-df_input_old <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Gmo-eVC5C1lksSlefJd8N1lciaAn057hExjeoE5XtbpDvJfz7Bxc_f_hwKSx_A/pub?gid=1515296378&single=true&output=csv')
-
-# Factor model
-efa_model <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/efa_equamax_14factors.rds')
-efa_model_old <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/old/2022/efa_model_equamax_15_factors.rds')
-
-# - Regression weights 1 ----------------------------------------------------
-fun_match_weights(
-  dbl_var = runif(50, 0, 100)
-)
-
-# - Regression weights 2 --------------------------------------------------
-fun_match_vweights(
-  df_data =
-    df_occupations %>%
-    select(starts_with('item_')) %>%
-    t() %>%
-    as_tibble()
-)
-
-# - BVLS similarity test ------------------------------------------------------------------
-fun_match_similarity(
-  df_data_rows =
-    df_occupations %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , chr_method = 'bvls'
-  , df_query_rows =
-    # df_input
-    df_occupations %>%
-    slice_sample(n = 1) %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , lgc_sort = T
-)[[1]] %>%
-  select(
-    occupation,
-    similarity
-  ) %>%
-  print(
-    n = 100
-  )
-
-# - Pearson similarity test ------------------------------------------------------------------
-fun_match_similarity(
-  df_data_rows =
-    df_occupations %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , chr_method = 'pearson'
-  , df_query_rows =
-    # df_input
-    df_occupations %>%
-    slice_sample(n = 1) %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , lgc_sort = T
-)[[1]] %>%
-  select(
-    occupation,
-    similarity
-  ) %>%
-  print(
-    n = 100
-  )
-
-# - KNN/Euclidean similarity test ------------------------------------------------------------------
-fun_match_similarity(
-  df_data_rows =
-    df_occupations %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , chr_method = 'knn'
-  , df_query_rows =
-    df_input
-  # df_occupations %>%
-  # slice_sample(n = 1) %>%
-  # select(
-  #   occupation
-  #   , starts_with('item_')
-  # )
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , lgc_sort = T
-)[[1]] %>%
-  select(
-    occupation,
-    similarity
-  ) %>%
-  print(
-    n = 100
-  )
-
-# - Logit similarity test ------------------------------------------------------------------
-# New data base
-fun_match_similarity(
-  df_data_rows =
-    df_occupations %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , chr_method = 'logit'
-  , df_query_rows =
-    df_input
-  # df_occupations %>%
-  # slice_sample(n = 1) %>%
-  # select(
-  #   occupation
-  #   , starts_with('item_')
-  # )
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , lgc_sort = T
-)[[1]] %>%
-  select(
-    occupation,
-    similarity
-  ) %>%
-  print(
-    n = 100
-  ) -> df_similarity
-
-# Old data base
-fun_match_similarity(
-  df_data_rows =
-    df_occupations_old %>%
-    select(
-      occupation
-      , ends_with('.l')
-    )
-  , chr_method = 'logit'
-  , df_query_rows =
-    df_input_old
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , lgc_sort = T
-)[[1]] %>%
-  select(
-    occupation,
-    similarity
-  ) %>%
-  print(
-    n = 100
-  ) -> df_similarity_old
-
-df_similarity %>% print(n = 20)
-df_similarity_old %>% print(n = 20)
-
-# - Similarity matrix test ------------------------------------------------
-fun_match_similarity(
-  df_data_rows =
-    df_occupations %>%
-    slice(1:10) %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , df_query_rows =
-    df_occupations %>%
-    slice_sample(n = 1) %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
-  , chr_method = 'bvls'
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , chr_id_col =
-    'occupation'
-)
+# # [TEST] ------------------------------------------------------------------
+# # - Data ------------------------------------------------------------------
+# # Occupations data frame
+# df_occupations <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_occupations_2023_efa.csv')
+# df_occupations_old <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_atlas_complete_equamax_15_factors.csv')
+# 
+# 
+# # My own professional profile
+# df_input <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSj7u2N59j8MTa7MZqk2Y-VDVWIWEDzAR_0gkb_jB_pBX4sm8yMS1N26ClmY6iWXA/pub?gid=145103706&single=true&output=csv')
+# df_input_old <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Gmo-eVC5C1lksSlefJd8N1lciaAn057hExjeoE5XtbpDvJfz7Bxc_f_hwKSx_A/pub?gid=1515296378&single=true&output=csv')
+# 
+# # Factor model
+# efa_model <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/efa_equamax_14factors.rds')
+# efa_model_old <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/old/2022/efa_model_equamax_15_factors.rds')
+# 
+# # - Regression weights 1 ----------------------------------------------------
+# fun_match_weights(
+#   dbl_var = runif(50, 0, 100)
+# )
+# 
+# # - Regression weights 2 --------------------------------------------------
+# fun_match_vweights(
+#   df_data =
+#     df_occupations %>%
+#     select(starts_with('item_')) %>%
+#     t() %>%
+#     as_tibble()
+# )
+# 
+# # - BVLS similarity test ------------------------------------------------------------------
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , chr_method = 'bvls'
+#   , df_query_rows =
+#     # df_input
+#     df_occupations %>%
+#     slice_sample(n = 1) %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , lgc_sort = T
+# )[[1]] %>%
+#   select(
+#     occupation,
+#     similarity
+#   ) %>%
+#   print(
+#     n = 100
+#   )
+# 
+# # - Pearson similarity test ------------------------------------------------------------------
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , chr_method = 'pearson'
+#   , df_query_rows =
+#     # df_input
+#     df_occupations %>%
+#     slice_sample(n = 1) %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , lgc_sort = T
+# )[[1]] %>%
+#   select(
+#     occupation,
+#     similarity
+#   ) %>%
+#   print(
+#     n = 100
+#   )
+# 
+# # - KNN/Euclidean similarity test ------------------------------------------------------------------
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , chr_method = 'knn'
+#   , df_query_rows =
+#     df_input
+#   # df_occupations %>%
+#   # slice_sample(n = 1) %>%
+#   # select(
+#   #   occupation
+#   #   , starts_with('item_')
+#   # )
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , lgc_sort = T
+# )[[1]] %>%
+#   select(
+#     occupation,
+#     similarity
+#   ) %>%
+#   print(
+#     n = 100
+#   )
+# 
+# # - Logit similarity test ------------------------------------------------------------------
+# # New data base
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , chr_method = 'logit'
+#   , df_query_rows =
+#     df_input
+#   # df_occupations %>%
+#   # slice_sample(n = 1) %>%
+#   # select(
+#   #   occupation
+#   #   , starts_with('item_')
+#   # )
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , lgc_sort = T
+# )[[1]] %>%
+#   select(
+#     occupation,
+#     similarity
+#   ) %>%
+#   print(
+#     n = 100
+#   ) -> df_similarity
+# 
+# # Old data base
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations_old %>%
+#     select(
+#       occupation
+#       , ends_with('.l')
+#     )
+#   , chr_method = 'logit'
+#   , df_query_rows =
+#     df_input_old
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , lgc_sort = T
+# )[[1]] %>%
+#   select(
+#     occupation,
+#     similarity
+#   ) %>%
+#   print(
+#     n = 100
+#   ) -> df_similarity_old
+# 
+# df_similarity %>% print(n = 20)
+# df_similarity_old %>% print(n = 20)
+# 
+# # - Similarity matrix test ------------------------------------------------
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations %>%
+#     slice(1:10) %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , df_query_rows =
+#     df_occupations %>%
+#     slice_sample(n = 1) %>%
+#     select(
+#       occupation
+#       , starts_with('item_')
+#     )
+#   , chr_method = 'bvls'
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , chr_id_col =
+#     'occupation'
+# )
