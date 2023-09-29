@@ -49,7 +49,7 @@
 #   , git = chr_git
 #   , profile = names(chr_git)
 # )
-
+# 
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
 fun_match_weights <- function(dbl_var){
@@ -846,7 +846,7 @@ fun_match_similarity <- function(
 #   select(
 #     occupation,
 #     similarity
-#   ) %>% 
+#   ) %>%
 #   print(
 #     n = 100
 #   )
@@ -875,7 +875,7 @@ fun_match_similarity <- function(
 #   select(
 #     occupation,
 #     similarity
-#   ) %>% 
+#   ) %>%
 #   print(
 #     n = 100
 #   )
@@ -934,7 +934,7 @@ fun_match_similarity <- function(
 #   select(
 #     occupation,
 #     similarity
-#   ) %>% 
+#   ) %>%
 #   print(
 #     n = 100
 #   ) -> df_similarity
@@ -957,7 +957,7 @@ fun_match_similarity <- function(
 #   select(
 #     occupation,
 #     similarity
-#   ) %>% 
+#   ) %>%
 #   print(
 #     n = 100
 #   ) -> df_similarity_old
