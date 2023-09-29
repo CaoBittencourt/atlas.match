@@ -797,12 +797,31 @@ fun_match_similarity <- function(
 # - Data ------------------------------------------------------------------
 # Occupations data frame
 df_occupations <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_occupations_2023_efa.csv')
+df_occupations_old <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_atlas_complete_equamax_15_factors.csv')
+
+library(stringr)
+
+# df_occupations_old %>% 
+df_occupations %>% 
+  filter(
+    str_detect(
+      occupation,
+      'Investment Fund'
+    )
+  ) %>% 
+  # pull(economics_and_accounting.l)
+  # pull(management_of_financial_resources.l)
+  # pull(item_management_of_financial_resources)
+  # pull(management_of_material_resources.l)
+  # pull(management_of_personal_resources.l)
 
 # My own professional profile
 df_input <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSj7u2N59j8MTa7MZqk2Y-VDVWIWEDzAR_0gkb_jB_pBX4sm8yMS1N26ClmY6iWXA/pub?gid=145103706&single=true&output=csv')
+df_input_old <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Gmo-eVC5C1lksSlefJd8N1lciaAn057hExjeoE5XtbpDvJfz7Bxc_f_hwKSx_A/pub?gid=1515296378&single=true&output=csv')
 
 # Factor model
 efa_model <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/efa_equamax_14factors.rds')
+efa_model_old <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/old/2022/efa_model_equamax_15_factors.rds')
 
 # - Regression weights 1 ----------------------------------------------------
 fun_match_weights(
@@ -906,6 +925,7 @@ fun_match_similarity(
   )
 
 # - Logit similarity test ------------------------------------------------------------------
+# New data base
 fun_match_similarity(
   df_data_rows =
     df_occupations %>%
@@ -915,13 +935,13 @@ fun_match_similarity(
     )
   , chr_method = 'logit'
   , df_query_rows =
-    # df_input
-    df_occupations %>%
-    slice_sample(n = 1) %>%
-    select(
-      occupation
-      , starts_with('item_')
-    )
+    df_input
+    # df_occupations %>%
+    # slice_sample(n = 1) %>%
+    # select(
+    #   occupation
+    #   , starts_with('item_')
+    # )
   , dbl_scale_ub = 100
   , dbl_scale_lb = 0
   , lgc_sort = T
@@ -932,7 +952,33 @@ fun_match_similarity(
   ) %>% 
   print(
     n = 100
-  )
+  ) -> df_similarity
+
+# Old data base
+fun_match_similarity(
+  df_data_rows =
+    df_occupations_old %>%
+    select(
+      occupation
+      , ends_with('.l')
+    )
+  , chr_method = 'logit'
+  , df_query_rows =
+    df_input_old
+  , dbl_scale_ub = 100
+  , dbl_scale_lb = 0
+  , lgc_sort = T
+)[[1]] %>%
+  select(
+    occupation,
+    similarity
+  ) %>% 
+  print(
+    n = 100
+  ) -> df_similarity_old
+
+df_similarity %>% print(n = 20)
+df_similarity_old %>% print(n = 20)
 
 # - Similarity matrix test ------------------------------------------------
 fun_match_similarity(
