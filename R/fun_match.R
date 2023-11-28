@@ -671,7 +671,7 @@ fun_match_similarity <- function(
     , df_query_rows
   ) -> dbl_query
   
-  rm(df_query_rows)
+  # rm(df_query_rows)
   
   df_data_rows[names(
     dbl_query
@@ -739,44 +739,49 @@ fun_match_similarity <- function(
     rm(dbl_scale_lb)
     
     # Similarity matrix
-    if(
-      all(
-        df_query_cols ==
-        df_data_cols
-      )
-    ){
+    rm(df_query_cols)
+    rm(df_data_cols)
+    
+    list_similarity %>%
+      bind_cols() %>%
+      as.matrix() ->
+      mtx_similarity
+    
+    if(length(chr_id_col)){
       
-      rm(df_query_cols)
-      rm(df_data_cols)
+      chr_id_col[[1]] -> chr_id_col
       
-      list_similarity %>%
-        bind_cols() %>%
-        as.matrix() ->
+      df_query_rows %>%
+        pull(!!sym(
+          chr_id_col
+        )) ->
+        colnames(
+          mtx_similarity
+        )
+      
+      df_data_rows %>%
+        pull(!!sym(
+          chr_id_col
+        )) ->
+        rownames(
+          mtx_similarity
+        )
+      
+      colnames(
         mtx_similarity
+      ) -> names(
+        list_similarity
+      )
       
-      if(length(chr_id_col)){
-        
-        chr_id_col[[1]] -> chr_id_col
-        
-        df_data_rows %>%
-          pull(!!sym(chr_id_col)) ->
-          colnames(
-            mtx_similarity
-          )
-        
-        colnames(
-          mtx_similarity
-        ) -> rownames(
-          mtx_similarity
-        )
-        
-        colnames(
-          mtx_similarity
-        ) -> names(
-          list_similarity
-        )
-        
-      }
+      list_similarity %>% 
+        map(
+          ~ .x %>% 
+            set_names(
+              rownames(
+                mtx_similarity
+              )
+            )
+        ) -> list_similarity
       
     }
     
