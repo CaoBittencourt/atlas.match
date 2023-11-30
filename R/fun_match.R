@@ -606,6 +606,198 @@ fun_match_similarity_cols <- function(
   
 }
 
+# # - Similarity function (row vectors) ---------------------------------------------------
+# fun_match_similarity <- function(
+    #     df_data_rows
+#     , df_query_rows
+#     , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'knn')
+#     , dbl_scale_ub = 100
+#     , dbl_scale_lb = 0
+#     , chr_id_col = NULL
+#     , lgc_sort = F
+# ){
+#   
+#   # Argument validation
+#   stopifnot(
+#     "'df_data_rows' must be a data frame." =
+#       is.data.frame(df_data_rows)
+#   )
+#   
+#   stopifnot(
+#     "'df_query_rows' must be a data frame." =
+#       is.data.frame(df_query_rows)
+#   )
+#   
+#   stopifnot(
+#     "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', or 'knn'." =
+#       any(
+#         chr_method == 'bvls',
+#         chr_method == 'logit',
+#         chr_method == 'probit',
+#         chr_method == 'pearson',
+#         chr_method == 'knn'
+#       )
+#   )
+#   
+#   stopifnot(
+#     "'dbl_scale_ub' must be numeric." =
+#       is.numeric(dbl_scale_ub)
+#   )
+#   
+#   stopifnot(
+#     "'dbl_scale_lb' must be numeric." =
+#       is.numeric(dbl_scale_lb)
+#   )
+#   
+#   stopifnot(
+#     "'lgc_sort' must be either TRUE or FALSE." =
+#       all(
+#         is.logical(lgc_sort)
+#         , !is.na(lgc_sort)
+#       )
+#   )
+#   
+#   stopifnot(
+#     "'chr_id_col' must be either NULL or a character string." = 
+#       any(
+#         is.null(chr_id_col)
+#         , is.character(chr_id_col)
+#       )
+#   )
+#   
+#   # Data wrangling
+#   Filter(
+#     function(x){all(is.numeric(x))}
+#     , df_query_rows
+#   ) -> dbl_query
+#   
+#   # rm(df_query_rows)
+#   
+#   df_data_rows[names(
+#     dbl_query
+#   )] -> df_data_cols
+#   
+#   # Pivot data
+#   t(dbl_query) -> 
+#     dbl_query
+#   
+#   as_tibble(t(
+#     df_data_cols
+#   )) -> df_data_cols
+#   
+#   # Apply similarity function
+#   if(ncol(dbl_query) == 1){
+#     
+#     fun_match_similarity_cols(
+#       df_data_cols = df_data_cols
+#       , dbl_query = dbl_query
+#       , chr_method = chr_method
+#       , dbl_scale_ub = dbl_scale_ub
+#       , dbl_scale_lb = dbl_scale_lb
+#     ) -> df_data_rows$similarity
+#     
+#     rm(dbl_query)
+#     rm(chr_method)
+#     rm(dbl_scale_ub)
+#     rm(dbl_scale_lb)
+#     rm(df_data_cols)
+#     
+#     # Sort data frame
+#     if(lgc_sort){
+#       
+#       df_data_rows %>%
+#         arrange(desc(
+#           similarity
+#         )) -> df_data_rows
+#       
+#     }
+#     
+#     list_similarity <- NULL
+#     mtx_similarity <- NULL
+#     
+#   } else {
+#     
+#     dbl_query %>%
+#       as_tibble() -> 
+#       df_query_cols
+#     
+#     rm(dbl_query)
+#     
+#     df_query_cols %>% 
+#       map(
+#         ~ fun_match_similarity_cols(
+#           df_data_cols = df_data_cols
+#           , dbl_query = as.matrix(.x)
+#           , chr_method = chr_method
+#           , dbl_scale_ub = dbl_scale_ub
+#           , dbl_scale_lb = dbl_scale_lb
+#         )
+#       ) -> list_similarity
+#     
+#     rm(chr_method)
+#     rm(dbl_scale_ub)
+#     rm(dbl_scale_lb)
+#     
+#     # Similarity matrix
+#     rm(df_query_cols)
+#     rm(df_data_cols)
+#     
+#     list_similarity %>%
+#       bind_cols() %>%
+#       as.matrix() ->
+#       mtx_similarity
+#     
+#     if(length(chr_id_col)){
+#       
+#       chr_id_col[[1]] -> chr_id_col
+#       
+#       df_query_rows %>%
+#         pull(!!sym(
+#           chr_id_col
+#         )) ->
+#         colnames(
+#           mtx_similarity
+#         )
+#       
+#       df_data_rows %>%
+#         pull(!!sym(
+#           chr_id_col
+#         )) ->
+#         rownames(
+#           mtx_similarity
+#         )
+#       
+#       colnames(
+#         mtx_similarity
+#       ) -> names(
+#         list_similarity
+#       )
+#       
+#       list_similarity %>% 
+#         map(
+#           ~ .x %>% 
+#             set_names(
+#               rownames(
+#                 mtx_similarity
+#               )
+#             )
+#         ) -> list_similarity
+#       
+#     }
+#     
+#     df_data_rows <- NULL
+#     
+#   }
+#   
+#   # Output
+#   return(compact(list(
+#     'df_similarity' = df_data_rows
+#     , 'list_similarity' = list_similarity
+#     , 'mtx_similarity' = mtx_similarity
+#   )))
+#   
+# }
+
 # - Similarity function (row vectors) ---------------------------------------------------
 fun_match_similarity <- function(
     df_data_rows
@@ -686,113 +878,77 @@ fun_match_similarity <- function(
   )) -> df_data_cols
   
   # Apply similarity function
-  if(ncol(dbl_query) == 1){
+  dbl_query %>%
+    as_tibble() ->
+    df_query_cols
+  
+  rm(dbl_query)
+  
+  df_query_cols %>% 
+    map(
+      ~ fun_match_similarity_cols(
+        df_data_cols = df_data_cols
+        , dbl_query = as.matrix(.x)
+        , chr_method = chr_method
+        , dbl_scale_ub = dbl_scale_ub
+        , dbl_scale_lb = dbl_scale_lb
+      )
+    ) -> list_similarity
+  
+  rm(chr_method)
+  rm(dbl_scale_ub)
+  rm(dbl_scale_lb)
+  
+  # Similarity matrix
+  rm(df_query_cols)
+  rm(df_data_cols)
+  
+  list_similarity %>%
+    bind_cols() %>%
+    as.matrix() ->
+    mtx_similarity
+  
+  if(length(chr_id_col)){
     
-    fun_match_similarity_cols(
-      df_data_cols = df_data_cols
-      , dbl_query = dbl_query
-      , chr_method = chr_method
-      , dbl_scale_ub = dbl_scale_ub
-      , dbl_scale_lb = dbl_scale_lb
-    ) -> df_data_rows$similarity
+    chr_id_col[[1]] -> chr_id_col
     
-    rm(dbl_query)
-    rm(chr_method)
-    rm(dbl_scale_ub)
-    rm(dbl_scale_lb)
-    rm(df_data_cols)
-    
-    # Sort data frame
-    if(lgc_sort){
-      
-      df_data_rows %>%
-        arrange(desc(
-          similarity
-        )) -> df_data_rows
-      
-    }
-    
-    list_similarity <- NULL
-    mtx_similarity <- NULL
-    
-  } else {
-    
-    dbl_query %>%
-      as_tibble() -> 
-      df_query_cols
-    
-    rm(dbl_query)
-    
-    df_query_cols %>% 
-      map(
-        ~ fun_match_similarity_cols(
-          df_data_cols = df_data_cols
-          , dbl_query = as.matrix(.x)
-          , chr_method = chr_method
-          , dbl_scale_ub = dbl_scale_ub
-          , dbl_scale_lb = dbl_scale_lb
-        )
-      ) -> list_similarity
-    
-    rm(chr_method)
-    rm(dbl_scale_ub)
-    rm(dbl_scale_lb)
-    
-    # Similarity matrix
-    rm(df_query_cols)
-    rm(df_data_cols)
-    
-    list_similarity %>%
-      bind_cols() %>%
-      as.matrix() ->
-      mtx_similarity
-    
-    if(length(chr_id_col)){
-      
-      chr_id_col[[1]] -> chr_id_col
-      
-      df_query_rows %>%
-        pull(!!sym(
-          chr_id_col
-        )) ->
-        colnames(
-          mtx_similarity
-        )
-      
-      df_data_rows %>%
-        pull(!!sym(
-          chr_id_col
-        )) ->
-        rownames(
-          mtx_similarity
-        )
-      
+    df_query_rows %>%
+      pull(!!sym(
+        chr_id_col
+      )) ->
       colnames(
         mtx_similarity
-      ) -> names(
-        list_similarity
       )
-      
-      list_similarity %>% 
-        map(
-          ~ .x %>% 
-            set_names(
-              rownames(
-                mtx_similarity
-              )
-            )
-        ) -> list_similarity
-      
-    }
     
-    df_data_rows <- NULL
+    df_data_rows %>%
+      pull(!!sym(
+        chr_id_col
+      )) ->
+      rownames(
+        mtx_similarity
+      )
+    
+    colnames(
+      mtx_similarity
+    ) -> names(
+      list_similarity
+    )
+    
+    list_similarity %>% 
+      map(
+        ~ .x %>% 
+          set_names(
+            rownames(
+              mtx_similarity
+            )
+          )
+      ) -> list_similarity
     
   }
   
   # Output
   return(compact(list(
-    'df_similarity' = df_data_rows
-    , 'list_similarity' = list_similarity
+    'list_similarity' = list_similarity
     , 'mtx_similarity' = mtx_similarity
   )))
   
