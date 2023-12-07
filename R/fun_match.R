@@ -877,6 +877,25 @@ fun_match_similarity <- function(
     df_data_cols
   )) -> df_data_cols
   
+  # ID column
+  if(length(chr_id_col)){
+    
+    chr_id_col[[1]] -> chr_id_col
+    
+    df_query_rows %>%
+      pull(!!sym(
+        chr_id_col
+      )) -> chr_id_query
+    
+    df_data_rows %>%
+      pull(!!sym(
+        chr_id_col
+      )) -> chr_id_data
+    
+    # rm(chr_id_col)
+    
+  }
+  
   # Apply similarity function
   dbl_query %>%
     as_tibble() ->
@@ -895,6 +914,14 @@ fun_match_similarity <- function(
       )
     ) -> list_similarity
   
+  list_similarity %>% 
+    map(
+    ~ .x %>%
+      set_names(
+        chr_id_data
+      )
+  ) -> list_similarity
+  
   rm(chr_method)
   rm(dbl_scale_ub)
   rm(dbl_scale_lb)
@@ -910,39 +937,20 @@ fun_match_similarity <- function(
   
   if(length(chr_id_col)){
     
-    chr_id_col[[1]] -> chr_id_col
+    colnames(mtx_similarity) <- chr_id_query
     
-    df_query_rows %>%
-      pull(!!sym(
-        chr_id_col
-      )) ->
-      colnames(
-        mtx_similarity
-      )
+    rownames(mtx_similarity) <- chr_id_data
     
-    df_data_rows %>%
-      pull(!!sym(
-        chr_id_col
-      )) ->
-      rownames(
-        mtx_similarity
-      )
+    names(list_similarity) <- chr_id_query
     
-    colnames(
-      mtx_similarity
-    ) -> names(
-      list_similarity
-    )
+  }
+  
+  # Sort
+  if(lgc_sort){
     
     list_similarity %>% 
-      map(
-        ~ .x %>% 
-          set_names(
-            rownames(
-              mtx_similarity
-            )
-          )
-      ) -> list_similarity
+      map(sort, decreasing = T) -> 
+      list_similarity
     
   }
   
