@@ -49,7 +49,7 @@
 #   , git = chr_git
 #   , profile = names(chr_git)
 # )
-# 
+
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
 fun_match_weights <- function(dbl_var){
@@ -454,34 +454,78 @@ fun_match_knn <- function(
   
   df_data_rows - df_query_rows -> df_dist
   
-  rm(df_data_rows)
   rm(df_query_rows)
   
   abs(df_dist) -> df_dist
   
-  # Normalize by scale bounds
-  df_dist / (
-    dbl_scale_ub -
-      dbl_scale_lb
-  ) -
-    dbl_scale_lb / (
-      dbl_scale_ub -
-        dbl_scale_lb
-    ) -> df_dist
+  # Weigh distances by attributes
+  df_data_rows * df_dist -> df_dist
   
-  # Weigh distances by attribute indispensability
-  if(!is.null(df_weights)){
-    
-    df_dist * df_weights -> df_dist
-    
-  }
+  # Normalize by maximum distance
+  rowSums(df_dist) / rowSums(
+    df_data_rows * 
+      pmax(
+        dbl_scale_ub - df_data_rows,
+        df_data_rows - dbl_scale_lb
+      )
+  ) -> dbl_dist
+  
+  rm(df_dist)
+  rm(df_data_rows)
   
   # Calculate similarity
-  1 - rowMeans(df_dist) -> 
-    dbl_similarity
+  1 - dbl_dist -> dbl_similarity
+  
+  # # Normalize by scale bounds
+  # df_dist / (
+  #   dbl_scale_ub -
+  #     dbl_scale_lb
+  # ) -
+  #   dbl_scale_lb / (
+  #     dbl_scale_ub -
+  #       dbl_scale_lb
+  #   ) -> df_dist
+  # 
+  # # Weigh distances by attribute indispensability
+  # if(!is.null(df_weights)){
+  #   
+  #   df_dist * df_weights -> df_dist
+  #   
+  # }
+  # 
+  # # Calculate similarity
+  # 1 - rowMeans(df_dist) -> 
+  #   dbl_similarity
   
   # Output
   return(dbl_similarity)
+  
+  # a_q <- runif(50, 0, 100)
+  # a_upsilon <- runif(length(a_q), 0, 100)
+  # 
+  # a_upsilon - a_q
+  # abs(a_upsilon - a_q)
+  # (a_q / 100) * abs(a_upsilon - a_q)
+  # sum((a_q / 100) * abs(a_upsilon - a_q))
+  # 
+  # pmax(100 - a_q, a_q - 0)
+  # (a_q / 100) * pmax(100 - a_q, a_q - 0)
+  # sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
+  # 
+  # 1 - sum((a_q / 100) * abs(a_upsilon - a_q))
+  # 1 - 
+  #   sum((a_q / sum(a_q)) * abs(a_upsilon - a_q)) / 
+  #   sum((a_q / sum(a_q)) * pmax(100 - a_q, a_q - 0))
+  # 1 - 
+  #   sum(a_q * abs(a_upsilon - a_q)) / 
+  #   sum(a_q * pmax(100 - a_q, a_q - 0))
+  # 1 - 
+  #   sum((a_q / 100) * abs(a_upsilon - a_q)) / 
+  #   sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
+  # 
+  # 1 - 
+  #   sum(abs(a_upsilon - a_q)) / 
+  #   sum(pmax(100 - a_q, a_q - 0))
   
 }
 
@@ -916,11 +960,11 @@ fun_match_similarity <- function(
   
   list_similarity %>% 
     map(
-    ~ .x %>%
-      set_names(
-        chr_id_data
-      )
-  ) -> list_similarity
+      ~ .x %>%
+        set_names(
+          chr_id_data
+        )
+    ) -> list_similarity
   
   rm(chr_method)
   rm(dbl_scale_ub)
