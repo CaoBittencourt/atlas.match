@@ -401,6 +401,134 @@ fun_match_logit <- function(
   
 }
 
+# # - KNN/Euclidean matching ----------------------------------------------------
+# fun_match_knn <- function(
+    #     df_data_cols
+#     , dbl_query
+#     , dbl_scale_ub = 100
+#     , dbl_scale_lb = 0
+#     , df_weights = NULL
+# ){
+#   
+#   # Arguments validation
+#   stopifnot(
+#     "'df_data_cols' must be a data frame." = 
+#       is.data.frame(df_data_cols)
+#   )
+#   
+#   stopifnot(
+#     "'dbl_query' must be numeric." =
+#       all(
+#         is.numeric(dbl_query)
+#         , length(dbl_query) ==
+#           nrow(df_data_cols)
+#       )
+#   )
+#   
+#   stopifnot(
+#     "'df_weights' must be either NULL or a numeric data frame." = 
+#       any(
+#         all(map_lgl(df_weights, is.numeric))
+#         , is.null(df_weights)
+#       )
+#   )
+#   
+#   # Data wrangling
+#   dbl_scale_ub[[1]] -> dbl_scale_ub
+#   
+#   dbl_scale_lb[[1]] -> dbl_scale_lb
+#   
+#   t(df_data_cols) -> df_data_rows
+#   
+#   t(df_weights) -> df_weights
+#   
+#   as_tibble(t(dbl_query)) -> df_query_rows
+#   
+#   rm(df_data_cols)
+#   rm(dbl_query)
+#   
+#   # Euclidean distance
+#   df_query_rows[rep(
+#     1, nrow(df_data_rows)
+#   ), ] -> df_query_rows
+#   
+#   df_data_rows - df_query_rows -> df_dist
+#   
+#   rm(df_query_rows)
+#   
+#   abs(df_dist) -> df_dist
+#   
+#   # Weigh distances by attributes
+#   df_data_rows * df_dist -> df_dist
+#   
+#   # Normalize by maximum distance
+#   rowSums(df_dist) / rowSums(
+#     df_data_rows * 
+#       pmax(
+#         dbl_scale_ub - df_data_rows,
+#         df_data_rows - dbl_scale_lb
+#       )
+#   ) -> dbl_dist
+#   
+#   rm(df_dist)
+#   rm(df_data_rows)
+#   
+#   # Calculate similarity
+#   1 - dbl_dist -> dbl_similarity
+#   
+#   # # Normalize by scale bounds
+#   # df_dist / (
+#   #   dbl_scale_ub -
+#   #     dbl_scale_lb
+#   # ) -
+#   #   dbl_scale_lb / (
+#   #     dbl_scale_ub -
+#   #       dbl_scale_lb
+#   #   ) -> df_dist
+#   # 
+#   # # Weigh distances by attribute indispensability
+#   # if(!is.null(df_weights)){
+#   #   
+#   #   df_dist * df_weights -> df_dist
+#   #   
+#   # }
+#   # 
+#   # # Calculate similarity
+#   # 1 - rowMeans(df_dist) -> 
+#   #   dbl_similarity
+#   
+#   # Output
+#   return(dbl_similarity)
+#   
+#   # a_q <- runif(50, 0, 100)
+#   # a_upsilon <- runif(length(a_q), 0, 100)
+#   # 
+#   # a_upsilon - a_q
+#   # abs(a_upsilon - a_q)
+#   # (a_q / 100) * abs(a_upsilon - a_q)
+#   # sum((a_q / 100) * abs(a_upsilon - a_q))
+#   # 
+#   # pmax(100 - a_q, a_q - 0)
+#   # (a_q / 100) * pmax(100 - a_q, a_q - 0)
+#   # sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
+#   # 
+#   # 1 - sum((a_q / 100) * abs(a_upsilon - a_q))
+#   # 1 - 
+#   #   sum((a_q / sum(a_q)) * abs(a_upsilon - a_q)) / 
+#   #   sum((a_q / sum(a_q)) * pmax(100 - a_q, a_q - 0))
+#   # 1 - 
+#   #   sum(a_q * abs(a_upsilon - a_q)) / 
+#   #   sum(a_q * pmax(100 - a_q, a_q - 0))
+#   # 1 - 
+#   #   sum((a_q / 100) * abs(a_upsilon - a_q)) / 
+#   #   sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
+#   # 
+#   # 1 - 
+#   #   sum(abs(a_upsilon - a_q)) / 
+#   #   sum(pmax(100 - a_q, a_q - 0))
+#   
+# }
+
 # - KNN/Euclidean matching ----------------------------------------------------
 fun_match_knn <- function(
     df_data_cols
@@ -447,85 +575,37 @@ fun_match_knn <- function(
   rm(df_data_cols)
   rm(dbl_query)
   
-  # Euclidean distance
+  # Weighted Euclidean distance
   df_query_rows[rep(
     1, nrow(df_data_rows)
   ), ] -> df_query_rows
   
-  df_data_rows - df_query_rows -> df_dist
+  df_data_rows * (
+    df_data_rows - 
+      df_query_rows
+  ) ^ 2 -> df_dist
   
   rm(df_query_rows)
   
-  abs(df_dist) -> df_dist
-  
-  # Weigh distances by attributes
-  df_data_rows * df_dist -> df_dist
+  sqrt(rowSums(df_dist)) -> df_dist
   
   # Normalize by maximum distance
-  rowSums(df_dist) / rowSums(
+  df_dist / sqrt(rowSums(
     df_data_rows * 
       pmax(
         dbl_scale_ub - df_data_rows,
         df_data_rows - dbl_scale_lb
-      )
-  ) -> dbl_dist
+      ) ^ 2
+  )) -> dbl_dist
   
   rm(df_dist)
   rm(df_data_rows)
   
   # Calculate similarity
   1 - dbl_dist -> dbl_similarity
-  
-  # # Normalize by scale bounds
-  # df_dist / (
-  #   dbl_scale_ub -
-  #     dbl_scale_lb
-  # ) -
-  #   dbl_scale_lb / (
-  #     dbl_scale_ub -
-  #       dbl_scale_lb
-  #   ) -> df_dist
-  # 
-  # # Weigh distances by attribute indispensability
-  # if(!is.null(df_weights)){
-  #   
-  #   df_dist * df_weights -> df_dist
-  #   
-  # }
-  # 
-  # # Calculate similarity
-  # 1 - rowMeans(df_dist) -> 
-  #   dbl_similarity
-  
+
   # Output
   return(dbl_similarity)
-  
-  # a_q <- runif(50, 0, 100)
-  # a_upsilon <- runif(length(a_q), 0, 100)
-  # 
-  # a_upsilon - a_q
-  # abs(a_upsilon - a_q)
-  # (a_q / 100) * abs(a_upsilon - a_q)
-  # sum((a_q / 100) * abs(a_upsilon - a_q))
-  # 
-  # pmax(100 - a_q, a_q - 0)
-  # (a_q / 100) * pmax(100 - a_q, a_q - 0)
-  # sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
-  # 
-  # 1 - sum((a_q / 100) * abs(a_upsilon - a_q))
-  # 1 - 
-  #   sum((a_q / sum(a_q)) * abs(a_upsilon - a_q)) / 
-  #   sum((a_q / sum(a_q)) * pmax(100 - a_q, a_q - 0))
-  # 1 - 
-  #   sum(a_q * abs(a_upsilon - a_q)) / 
-  #   sum(a_q * pmax(100 - a_q, a_q - 0))
-  # 1 - 
-  #   sum((a_q / 100) * abs(a_upsilon - a_q)) / 
-  #   sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
-  # 
-  # 1 - 
-  #   sum(abs(a_upsilon - a_q)) / 
-  #   sum(pmax(100 - a_q, a_q - 0))
   
 }
 
