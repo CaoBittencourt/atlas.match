@@ -1,58 +1,62 @@
-# # [SETUP] -----------------------------------------------------------------
-# # - Packages ----------------------------------------------------------------
-# # CRAN packages
-# chr_pkg <- c(
-#   'bvls', 'fastglm', 'weights' #Regression models
-#   , 'devtools' #GitHub packages (temp)
-#   , 'readr' #Read data (temp)
-#   , 'dplyr', 'tidyr', 'purrr' #Data wrangling
-# )
-# 
-# # Git packages
-# chr_git <- c(
-#   'CaoBittencourt' = 'atlas.kind' #Human capital indispensability coefficient
-# )
-# 
-# # Activate / install CRAN packages
-# lapply(
-#   chr_pkg
-#   , function(pkg){
-# 
-#     if(!require(pkg, character.only = T)){
-# 
-#       install.packages(pkg)
-# 
-#     }
-# 
-#     require(pkg, character.only = T)
-# 
-#   }
-# )
-# 
-# # Activate / install Git packages
-# Map(
-#   function(git, profile){
-# 
-#     if(!require(git, character.only = T)){
-# 
-#       install_github(
-#         paste0(profile, '/', git)
-#         , upgrade = F
-#         , force = T
-#       )
-# 
-#     }
-# 
-#     require(git, character.only = T)
-# 
-#   }
-#   , git = chr_git
-#   , profile = names(chr_git)
-# )
+# [SETUP] -----------------------------------------------------------------
+# - Packages ----------------------------------------------------------------
+# CRAN packages
+chr_pkg <- c(
+  'bvls', 'fastglm', 'weights' #Regression models
+  , 'devtools' #GitHub packages (temp)
+  , 'readr' #Read data (temp)
+  , 'dplyr', 'tidyr', 'purrr' #Data wrangling
+)
+
+# Git packages
+chr_git <- c(
+  'CaoBittencourt' = 'atlas.kind' #Human capital indispensability coefficient
+)
+
+# Activate / install CRAN packages
+lapply(
+  chr_pkg
+  , function(pkg){
+    
+    if(!require(pkg, character.only = T)){
+      
+      install.packages(pkg)
+      
+    }
+    
+    require(pkg, character.only = T)
+    
+  }
+)
+
+# Activate / install Git packages
+Map(
+  function(git, profile){
+    
+    if(!require(git, character.only = T)){
+      
+      install_github(
+        paste0(profile, '/', git)
+        , upgrade = F
+        , force = T
+      )
+      
+    }
+    
+    require(git, character.only = T)
+    
+  }
+  , git = chr_git
+  , profile = names(chr_git)
+)
 
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
-fun_match_weights <- function(dbl_var){
+fun_match_weights <- function(
+    dbl_var
+    , chr_weights = c('unweighted', 'linear', 'quadratic', 'speciality-root', 'attribute-eqvl')
+    , dbl_generality = NULL
+){
   
   # Argument validation
   stopifnot(
@@ -60,18 +64,46 @@ fun_match_weights <- function(dbl_var){
       is.numeric(dbl_var)
   )
   
-  # Apply human capital indispensability function
-  fun_kind_indispensability(
-    dbl_profile = dbl_var,
-    dbl_scale_lb = 0
-  ) -> dbl_weights
+  stopifnot(
+    "'chr_weights' must be either 'unweighted', 'linear', 'quadratic', 'speciality-root', or 'attribute-eqvl'." = 
+      any(
+        chr_weights == 'unweighted',
+        chr_weights == 'linear',
+        chr_weights == 'quadratic', 
+        chr_weights == 'speciality-root', 
+        chr_weights == 'attribute-eqvl'
+      )
+  )
   
-  # Apply equivalence function to regression weights
-  # fun_eqvl_equivalence(
-  #   dbl_var = dbl_var
-  #   , dbl_scaling =
-  #     dbl_scaling
-  # ) -> dbl_weights
+  # Weighting methods
+  if(chr_weights == 'linear'){
+    # Linear weights
+    dbl_var -> dbl_weights
+    
+  } else if(chr_weights == 'quadratic'){
+    # Quadratic weights
+    dbl_var ^ 2 -> dbl_weights
+    
+  } else if(chr_weights == 'speciality-root'){
+    # Speciality root weights
+    dbl_var ^ (
+      1 / (1 - dbl_generality)
+    ) -> dbl_weights
+    
+  } else if(chr_weights == 'attribute-eqvl'){
+    # Attribute equivalence weights
+    fun_kind_indispensability(
+      dbl_profile = dbl_var
+      , dbl_generality = 
+        dbl_generality
+      # , dbl_scale_lb = 0
+    ) -> dbl_weights
+    
+  } else {
+    # Unweighted
+    NULL -> dbl_weights
+    
+  }
   
   # Output
   return(dbl_weights)
@@ -79,7 +111,11 @@ fun_match_weights <- function(dbl_var){
 }
 
 # - Vectorized regression weights -----------------------------------------
-fun_match_vweights <- function(df_data_cols){
+fun_match_vweights <- function(
+    df_data_cols
+    , chr_weights = NULL
+    , dbl_generality = NULL
+){
   
   # Arguments validation
   stopifnot(
@@ -94,22 +130,45 @@ fun_match_vweights <- function(df_data_cols){
     )) -> df_data_cols
   
   # Map weights function
-  map_df(
-    .x = df_data_cols
-    , fun_match_weights
-  ) -> df_data_cols
+  if(length(dbl_generality)){
+    
+    map2(
+      .x = df_data_cols
+      , .y = dbl_generality
+      , .f = fun_match_weights
+      , chr_weights = 
+        chr_weights
+    ) -> list_weights
+    
+  } else {
+    
+    map(
+      .x = df_data_cols
+      , .f = fun_match_weights
+      , chr_weights = 
+        chr_weights
+    ) -> list_weights 
+    
+  }
   
-  # map_df(
-  #   .x = df_data_cols
-  #   , ~ fun_match_weights(
-  #     dbl_var = .x
-  #     , dbl_scaling = 
-  #       dbl_scaling
-  #   )
-  # ) -> df_data_cols
+  if(chr_weights != 'unweighted'){
+    
+    list_weights %>% 
+      as_tibble() ->
+      df_weights
+    
+  } else {
+    
+    list_weights %>% 
+      list_c() -> 
+      df_weights
+    
+  }
+  
+  rm(list_weights)
   
   # Output
-  return(df_data_cols)
+  return(df_weights)
   
 }
 
@@ -256,6 +315,12 @@ fun_match_pearson <- function(
   
 }
 
+# - Spearman correlation matching -------------------------------------------
+
+
+# - Kendau's tau correlation matching -------------------------------------------
+
+
 # - Logistic regression matching ------------------------------------------
 fun_match_logit <- function(
     df_data_cols
@@ -401,136 +466,8 @@ fun_match_logit <- function(
   
 }
 
-# # - KNN/Euclidean matching ----------------------------------------------------
-# fun_match_knn <- function(
-    #     df_data_cols
-#     , dbl_query
-#     , dbl_scale_ub = 100
-#     , dbl_scale_lb = 0
-#     , df_weights = NULL
-# ){
-#   
-#   # Arguments validation
-#   stopifnot(
-#     "'df_data_cols' must be a data frame." = 
-#       is.data.frame(df_data_cols)
-#   )
-#   
-#   stopifnot(
-#     "'dbl_query' must be numeric." =
-#       all(
-#         is.numeric(dbl_query)
-#         , length(dbl_query) ==
-#           nrow(df_data_cols)
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'df_weights' must be either NULL or a numeric data frame." = 
-#       any(
-#         all(map_lgl(df_weights, is.numeric))
-#         , is.null(df_weights)
-#       )
-#   )
-#   
-#   # Data wrangling
-#   dbl_scale_ub[[1]] -> dbl_scale_ub
-#   
-#   dbl_scale_lb[[1]] -> dbl_scale_lb
-#   
-#   t(df_data_cols) -> df_data_rows
-#   
-#   t(df_weights) -> df_weights
-#   
-#   as_tibble(t(dbl_query)) -> df_query_rows
-#   
-#   rm(df_data_cols)
-#   rm(dbl_query)
-#   
-#   # Euclidean distance
-#   df_query_rows[rep(
-#     1, nrow(df_data_rows)
-#   ), ] -> df_query_rows
-#   
-#   df_data_rows - df_query_rows -> df_dist
-#   
-#   rm(df_query_rows)
-#   
-#   abs(df_dist) -> df_dist
-#   
-#   # Weigh distances by attributes
-#   df_data_rows * df_dist -> df_dist
-#   
-#   # Normalize by maximum distance
-#   rowSums(df_dist) / rowSums(
-#     df_data_rows * 
-#       pmax(
-#         dbl_scale_ub - df_data_rows,
-#         df_data_rows - dbl_scale_lb
-#       )
-#   ) -> dbl_dist
-#   
-#   rm(df_dist)
-#   rm(df_data_rows)
-#   
-#   # Calculate similarity
-#   1 - dbl_dist -> dbl_similarity
-#   
-#   # # Normalize by scale bounds
-#   # df_dist / (
-#   #   dbl_scale_ub -
-#   #     dbl_scale_lb
-#   # ) -
-#   #   dbl_scale_lb / (
-#   #     dbl_scale_ub -
-#   #       dbl_scale_lb
-#   #   ) -> df_dist
-#   # 
-#   # # Weigh distances by attribute indispensability
-#   # if(!is.null(df_weights)){
-#   #   
-#   #   df_dist * df_weights -> df_dist
-#   #   
-#   # }
-#   # 
-#   # # Calculate similarity
-#   # 1 - rowMeans(df_dist) -> 
-#   #   dbl_similarity
-#   
-#   # Output
-#   return(dbl_similarity)
-#   
-#   # a_q <- runif(50, 0, 100)
-#   # a_upsilon <- runif(length(a_q), 0, 100)
-#   # 
-#   # a_upsilon - a_q
-#   # abs(a_upsilon - a_q)
-#   # (a_q / 100) * abs(a_upsilon - a_q)
-#   # sum((a_q / 100) * abs(a_upsilon - a_q))
-#   # 
-#   # pmax(100 - a_q, a_q - 0)
-#   # (a_q / 100) * pmax(100 - a_q, a_q - 0)
-#   # sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
-#   # 
-#   # 1 - sum((a_q / 100) * abs(a_upsilon - a_q))
-#   # 1 - 
-#   #   sum((a_q / sum(a_q)) * abs(a_upsilon - a_q)) / 
-#   #   sum((a_q / sum(a_q)) * pmax(100 - a_q, a_q - 0))
-#   # 1 - 
-#   #   sum(a_q * abs(a_upsilon - a_q)) / 
-#   #   sum(a_q * pmax(100 - a_q, a_q - 0))
-#   # 1 - 
-#   #   sum((a_q / 100) * abs(a_upsilon - a_q)) / 
-#   #   sum((a_q / 100) * pmax(100 - a_q, a_q - 0))
-#   # 
-#   # 1 - 
-#   #   sum(abs(a_upsilon - a_q)) / 
-#   #   sum(pmax(100 - a_q, a_q - 0))
-#   
-# }
-
-# - KNN/Euclidean matching ----------------------------------------------------
-fun_match_knn <- function(
+# - Euclidean matching ----------------------------------------------------
+fun_match_euclidean <- function(
     df_data_cols
     , dbl_query
     , dbl_scale_ub = 100
@@ -568,42 +505,76 @@ fun_match_knn <- function(
   
   t(df_data_cols) -> df_data_rows
   
-  t(df_weights) -> df_weights
+  if(length(df_weights)){
+    
+    t(df_weights) -> df_weights
+    
+  }
   
   as_tibble(t(dbl_query)) -> df_query_rows
   
   rm(df_data_cols)
   rm(dbl_query)
   
-  # Weighted Euclidean distance
-  df_query_rows[rep(
-    1, nrow(df_data_rows)
-  ), ] -> df_query_rows
-  
-  df_data_rows * (
-    df_data_rows - 
-      df_query_rows
-  ) ^ 2 -> df_dist
-  
-  rm(df_query_rows)
-  
-  sqrt(rowSums(df_dist)) -> df_dist
-  
-  # Normalize by maximum distance
-  df_dist / sqrt(rowSums(
-    df_data_rows * 
+  # Euclidean distance
+  if(length(df_weights)){
+    
+    # Weighted Euclidean distance
+    df_query_rows[rep(
+      1, nrow(df_data_rows)
+    ), ] -> df_query_rows
+    
+    df_weights * (
+      df_data_rows - 
+        df_query_rows
+    ) ^ 2 -> df_dist
+    
+    rm(df_query_rows)
+    
+    sqrt(rowSums(df_dist)) -> df_dist
+    
+    # Normalize by maximum distance
+    df_dist / sqrt(rowSums(
+      df_weights * 
+        pmax(
+          dbl_scale_ub - df_data_rows,
+          df_data_rows - dbl_scale_lb
+        ) ^ 2
+    )) -> dbl_dist
+    
+  } else {
+    
+    # Unweighted Euclidean distance
+    df_query_rows[rep(
+      1, nrow(df_data_rows)
+    ), ] -> df_query_rows
+    
+    (
+      df_data_rows - 
+        df_query_rows
+    ) ^ 2 -> df_dist
+    
+    rm(df_query_rows)
+    
+    sqrt(rowSums(df_dist)) -> df_dist
+    
+    # Normalize by maximum distance
+    df_dist / sqrt(rowSums(
       pmax(
         dbl_scale_ub - df_data_rows,
         df_data_rows - dbl_scale_lb
       ) ^ 2
-  )) -> dbl_dist
+    )) -> dbl_dist 
+    
+  }
   
   rm(df_dist)
+  rm(df_weights)
   rm(df_data_rows)
   
   # Calculate similarity
   1 - dbl_dist -> dbl_similarity
-
+  
   # Output
   return(dbl_similarity)
   
@@ -613,10 +584,10 @@ fun_match_knn <- function(
 fun_match_similarity_cols <- function(
     df_data_cols
     , dbl_query
-    , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'knn')
+    , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'spearman', 'kendau', 'euclidean')
+    , df_weights = NULL
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
-    , dbl_scaling = 0.25
     , lgc_sort = F
 ){
   
@@ -632,13 +603,23 @@ fun_match_similarity_cols <- function(
   )
   
   stopifnot(
-    "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', or 'knn'." =
+    "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', 'spearman', 'kendau' or 'euclidean'." =
       any(
         chr_method == 'bvls',
         chr_method == 'logit',
         chr_method == 'probit',
         chr_method == 'pearson',
-        chr_method == 'knn'
+        chr_method == 'spearman',
+        chr_method == 'kendau',
+        chr_method == 'euclidean'
+      )
+  )
+  
+  stopifnot(
+    "'df_weights' must be either NULL or a numeric data frame." = 
+      any(
+        all(map_lgl(df_weights, is.numeric))
+        , is.null(df_weights)
       )
   )
   
@@ -651,18 +632,6 @@ fun_match_similarity_cols <- function(
     "'dbl_scale_lb' must be numeric." =
       is.numeric(dbl_scale_lb)
   )
-  
-  # Data wrangling
-  dbl_scale_ub[[1]] -> dbl_scale_ub
-  
-  dbl_scale_lb[[1]] -> dbl_scale_lb
-  
-  chr_method[[1]] -> chr_method
-  
-  # Weights
-  fun_match_vweights(
-    df_data_cols
-  ) -> df_weights
   
   # Apply matching method
   if(chr_method == 'bvls'){
@@ -689,10 +658,34 @@ fun_match_similarity_cols <- function(
         df_weights
     ) -> dbl_similarity
     
-  } else if(chr_method == 'knn') {
+  }  else if(chr_method == 'spearman') {
     
-    # Apply KNN/Euclidean matching
-    fun_match_knn(
+    # Apply Spearman correlation matching
+    fun_match_pearson(
+      df_data_cols = 
+        df_data_cols
+      , dbl_query = 
+        dbl_query
+      , df_weights = 
+        df_weights
+    ) -> dbl_similarity
+    
+  }  else if(chr_method == 'kendau') {
+    
+    # Apply Kendau's tau correlation matching
+    fun_match_pearson(
+      df_data_cols = 
+        df_data_cols
+      , dbl_query = 
+        dbl_query
+      , df_weights = 
+        df_weights
+    ) -> dbl_similarity
+    
+  } else if(chr_method == 'euclidean') {
+    
+    # Apply Euclidean matching
+    fun_match_euclidean(
       df_data_cols = 
         df_data_cols
       , dbl_query = 
@@ -730,203 +723,12 @@ fun_match_similarity_cols <- function(
   
 }
 
-# # - Similarity function (row vectors) ---------------------------------------------------
-# fun_match_similarity <- function(
-    #     df_data_rows
-#     , df_query_rows
-#     , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'knn')
-#     , dbl_scale_ub = 100
-#     , dbl_scale_lb = 0
-#     , chr_id_col = NULL
-#     , lgc_sort = F
-# ){
-#   
-#   # Argument validation
-#   stopifnot(
-#     "'df_data_rows' must be a data frame." =
-#       is.data.frame(df_data_rows)
-#   )
-#   
-#   stopifnot(
-#     "'df_query_rows' must be a data frame." =
-#       is.data.frame(df_query_rows)
-#   )
-#   
-#   stopifnot(
-#     "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', or 'knn'." =
-#       any(
-#         chr_method == 'bvls',
-#         chr_method == 'logit',
-#         chr_method == 'probit',
-#         chr_method == 'pearson',
-#         chr_method == 'knn'
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'dbl_scale_ub' must be numeric." =
-#       is.numeric(dbl_scale_ub)
-#   )
-#   
-#   stopifnot(
-#     "'dbl_scale_lb' must be numeric." =
-#       is.numeric(dbl_scale_lb)
-#   )
-#   
-#   stopifnot(
-#     "'lgc_sort' must be either TRUE or FALSE." =
-#       all(
-#         is.logical(lgc_sort)
-#         , !is.na(lgc_sort)
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'chr_id_col' must be either NULL or a character string." = 
-#       any(
-#         is.null(chr_id_col)
-#         , is.character(chr_id_col)
-#       )
-#   )
-#   
-#   # Data wrangling
-#   Filter(
-#     function(x){all(is.numeric(x))}
-#     , df_query_rows
-#   ) -> dbl_query
-#   
-#   # rm(df_query_rows)
-#   
-#   df_data_rows[names(
-#     dbl_query
-#   )] -> df_data_cols
-#   
-#   # Pivot data
-#   t(dbl_query) -> 
-#     dbl_query
-#   
-#   as_tibble(t(
-#     df_data_cols
-#   )) -> df_data_cols
-#   
-#   # Apply similarity function
-#   if(ncol(dbl_query) == 1){
-#     
-#     fun_match_similarity_cols(
-#       df_data_cols = df_data_cols
-#       , dbl_query = dbl_query
-#       , chr_method = chr_method
-#       , dbl_scale_ub = dbl_scale_ub
-#       , dbl_scale_lb = dbl_scale_lb
-#     ) -> df_data_rows$similarity
-#     
-#     rm(dbl_query)
-#     rm(chr_method)
-#     rm(dbl_scale_ub)
-#     rm(dbl_scale_lb)
-#     rm(df_data_cols)
-#     
-#     # Sort data frame
-#     if(lgc_sort){
-#       
-#       df_data_rows %>%
-#         arrange(desc(
-#           similarity
-#         )) -> df_data_rows
-#       
-#     }
-#     
-#     list_similarity <- NULL
-#     mtx_similarity <- NULL
-#     
-#   } else {
-#     
-#     dbl_query %>%
-#       as_tibble() -> 
-#       df_query_cols
-#     
-#     rm(dbl_query)
-#     
-#     df_query_cols %>% 
-#       map(
-#         ~ fun_match_similarity_cols(
-#           df_data_cols = df_data_cols
-#           , dbl_query = as.matrix(.x)
-#           , chr_method = chr_method
-#           , dbl_scale_ub = dbl_scale_ub
-#           , dbl_scale_lb = dbl_scale_lb
-#         )
-#       ) -> list_similarity
-#     
-#     rm(chr_method)
-#     rm(dbl_scale_ub)
-#     rm(dbl_scale_lb)
-#     
-#     # Similarity matrix
-#     rm(df_query_cols)
-#     rm(df_data_cols)
-#     
-#     list_similarity %>%
-#       bind_cols() %>%
-#       as.matrix() ->
-#       mtx_similarity
-#     
-#     if(length(chr_id_col)){
-#       
-#       chr_id_col[[1]] -> chr_id_col
-#       
-#       df_query_rows %>%
-#         pull(!!sym(
-#           chr_id_col
-#         )) ->
-#         colnames(
-#           mtx_similarity
-#         )
-#       
-#       df_data_rows %>%
-#         pull(!!sym(
-#           chr_id_col
-#         )) ->
-#         rownames(
-#           mtx_similarity
-#         )
-#       
-#       colnames(
-#         mtx_similarity
-#       ) -> names(
-#         list_similarity
-#       )
-#       
-#       list_similarity %>% 
-#         map(
-#           ~ .x %>% 
-#             set_names(
-#               rownames(
-#                 mtx_similarity
-#               )
-#             )
-#         ) -> list_similarity
-#       
-#     }
-#     
-#     df_data_rows <- NULL
-#     
-#   }
-#   
-#   # Output
-#   return(compact(list(
-#     'df_similarity' = df_data_rows
-#     , 'list_similarity' = list_similarity
-#     , 'mtx_similarity' = mtx_similarity
-#   )))
-#   
-# }
-
 # - Similarity function (row vectors) ---------------------------------------------------
 fun_match_similarity <- function(
     df_data_rows
     , df_query_rows
-    , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'knn')
+    , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'spearman', 'kendau', 'euclidean')
+    , chr_weights = c('linear', 'quadratic', 'speciality-root', 'attribute-eqvl')
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
     , chr_id_col = NULL
@@ -945,13 +747,26 @@ fun_match_similarity <- function(
   )
   
   stopifnot(
-    "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', or 'knn'." =
+    "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', 'spearman', 'kendau' or 'euclidean'." =
       any(
         chr_method == 'bvls',
         chr_method == 'logit',
         chr_method == 'probit',
         chr_method == 'pearson',
-        chr_method == 'knn'
+        chr_method == 'spearman',
+        chr_method == 'kendau',
+        chr_method == 'euclidean'
+      )
+  )
+  
+  stopifnot(
+    "'chr_weights' must be either 'unweighted, 'linear', 'quadratic', 'speciality-root', or 'attribute-eqvl'." = 
+      any(
+        chr_weights == 'unweighted',
+        chr_weights == 'linear',
+        chr_weights == 'quadratic', 
+        chr_weights == 'speciality-root', 
+        chr_weights == 'attribute-eqvl'
       )
   )
   
@@ -982,6 +797,14 @@ fun_match_similarity <- function(
   )
   
   # Data wrangling
+  dbl_scale_ub[[1]] -> dbl_scale_ub
+  
+  dbl_scale_lb[[1]] -> dbl_scale_lb
+  
+  chr_method[[1]] -> chr_method
+  
+  chr_weights[[1]] -> chr_weights
+  
   Filter(
     function(x){all(is.numeric(x))}
     , df_query_rows
@@ -1020,6 +843,40 @@ fun_match_similarity <- function(
     
   }
   
+  # Weights
+  if(any(
+    chr_weights == 'speciality-root',
+    chr_weights == 'attribute-eqvl'
+  )){
+    # Calculate skill set generality
+    # for weighting methods that require generality
+    map_dbl(
+      df_data_cols
+      , fun_gene_generality
+      , dbl_scale_lb =
+        dbl_scale_lb
+      , dbl_scale_ub =
+        dbl_scale_ub
+    ) -> dbl_generality
+    
+  } else {
+    
+    NULL -> dbl_generality
+    
+  }
+  
+  # Apply weighting function
+  fun_match_vweights(
+    df_data_cols
+    , chr_weights = 
+      chr_weights
+    , dbl_generality = 
+      dbl_generality
+  ) -> df_weights
+  
+  rm(chr_weights)
+  rm(dbl_generality)
+  
   # Apply similarity function
   dbl_query %>%
     as_tibble() ->
@@ -1033,6 +890,7 @@ fun_match_similarity <- function(
         df_data_cols = df_data_cols
         , dbl_query = as.matrix(.x)
         , chr_method = chr_method
+        , df_weights = df_weights
         , dbl_scale_ub = dbl_scale_ub
         , dbl_scale_lb = dbl_scale_lb
       )
@@ -1086,197 +944,64 @@ fun_match_similarity <- function(
   
 }
 
-# # [TEST] ------------------------------------------------------------------
-# # - Data ------------------------------------------------------------------
-# # Occupations data frame
-# df_occupations <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_occupations_2023_efa.csv')
-# df_occupations_old <- read_csv('C:/Users/Cao/Documents/Github/Atlas-Research-dev/Data/df_atlas_complete_equamax_15_factors.csv')
-# 
-# 
-# # My own professional profile
-# df_input <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSj7u2N59j8MTa7MZqk2Y-VDVWIWEDzAR_0gkb_jB_pBX4sm8yMS1N26ClmY6iWXA/pub?gid=145103706&single=true&output=csv')
-# df_input_old <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Gmo-eVC5C1lksSlefJd8N1lciaAn057hExjeoE5XtbpDvJfz7Bxc_f_hwKSx_A/pub?gid=1515296378&single=true&output=csv')
-# 
-# # Factor model
-# efa_model <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/efa_equamax_14factors.rds')
-# efa_model_old <- read_rds('C:/Users/Cao/Documents/Github/atlas-research-dev/data/efa/old/2022/efa_model_equamax_15_factors.rds')
-# 
-# # - Regression weights 1 ----------------------------------------------------
-# fun_match_weights(
-#   dbl_var = runif(50, 0, 100)
-# )
-# 
-# # - Regression weights 2 --------------------------------------------------
-# fun_match_vweights(
-#   df_data =
-#     df_occupations %>%
-#     select(starts_with('item_')) %>%
-#     t() %>%
-#     as_tibble()
-# )
-# 
-# # - BVLS similarity test ------------------------------------------------------------------
-# fun_match_similarity(
-#   df_data_rows =
-#     df_occupations %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , chr_method = 'bvls'
-#   , df_query_rows =
-#     # df_input
-#     df_occupations %>%
-#     slice_sample(n = 1) %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , dbl_scale_ub = 100
-#   , dbl_scale_lb = 0
-#   , lgc_sort = T
-# )[[1]] %>%
-#   select(
-#     occupation,
-#     similarity
-#   ) %>%
-#   print(
-#     n = 100
-#   )
-# 
-# # - Pearson similarity test ------------------------------------------------------------------
-# fun_match_similarity(
-#   df_data_rows =
-#     df_occupations %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , chr_method = 'pearson'
-#   , df_query_rows =
-#     # df_input
-#     df_occupations %>%
-#     slice_sample(n = 1) %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , dbl_scale_ub = 100
-#   , dbl_scale_lb = 0
-#   , lgc_sort = T
-# )[[1]] %>%
-#   select(
-#     occupation,
-#     similarity
-#   ) %>%
-#   print(
-#     n = 100
-#   )
-# 
-# # - KNN/Euclidean similarity test ------------------------------------------------------------------
-# fun_match_similarity(
-#   df_data_rows =
-#     df_occupations %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , chr_method = 'knn'
-#   , df_query_rows =
-#     df_input
-#   # df_occupations %>%
-#   # slice_sample(n = 1) %>%
-#   # select(
-#   #   occupation
-#   #   , starts_with('item_')
-#   # )
-#   , dbl_scale_ub = 100
-#   , dbl_scale_lb = 0
-#   , lgc_sort = T
-# )[[1]] %>%
-#   select(
-#     occupation,
-#     similarity
-#   ) %>%
-#   print(
-#     n = 100
-#   )
-# 
-# # - Logit similarity test ------------------------------------------------------------------
-# # New data base
-# fun_match_similarity(
-#   df_data_rows =
-#     df_occupations %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , chr_method = 'logit'
-#   , df_query_rows =
-#     df_input
-#   # df_occupations %>%
-#   # slice_sample(n = 1) %>%
-#   # select(
-#   #   occupation
-#   #   , starts_with('item_')
-#   # )
-#   , dbl_scale_ub = 100
-#   , dbl_scale_lb = 0
-#   , lgc_sort = T
-# )[[1]] %>%
-#   select(
-#     occupation,
-#     similarity
-#   ) %>%
-#   print(
-#     n = 100
-#   ) -> df_similarity
-# 
-# # Old data base
-# fun_match_similarity(
-#   df_data_rows =
-#     df_occupations_old %>%
-#     select(
-#       occupation
-#       , ends_with('.l')
-#     )
-#   , chr_method = 'logit'
-#   , df_query_rows =
-#     df_input_old
-#   , dbl_scale_ub = 100
-#   , dbl_scale_lb = 0
-#   , lgc_sort = T
-# )[[1]] %>%
-#   select(
-#     occupation,
-#     similarity
-#   ) %>%
-#   print(
-#     n = 100
-#   ) -> df_similarity_old
-# 
-# df_similarity %>% print(n = 20)
-# df_similarity_old %>% print(n = 20)
-# 
-# # - Similarity matrix test ------------------------------------------------
-# fun_match_similarity(
-#   df_data_rows =
-#     df_occupations %>%
-#     slice(1:10) %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , df_query_rows =
-#     df_occupations %>%
-#     slice_sample(n = 1) %>%
-#     select(
-#       occupation
-#       , starts_with('item_')
-#     )
-#   , chr_method = 'bvls'
-#   , dbl_scale_ub = 100
-#   , dbl_scale_lb = 0
-#   , chr_id_col =
-#     'occupation'
-# )
+# [TEST] ------------------------------------------------------------------
+# - Data ------------------------------------------------------------------
+df_occupations <- read_csv('/home/Cao/Storage/github/atlas-research/data/occupations/df_occupations_2022.csv')
+
+df_occupations %>% 
+  select(
+    occupation
+    , starts_with('skl_'),
+    , starts_with('abl_'),
+    , starts_with('knw_')
+  ) -> df_occupations
+
+# - fun_match_similarity -----------------------------------
+fun_match_similarity(
+  df_data_rows = 
+    df_occupations %>% 
+    filter(
+      occupation %in% c(
+        'Mechanical Engineers',
+        'Physicists',
+        'Credit Analysts',
+        'Dishwashers'
+      )
+    ) %>% 
+    slice(
+      2, 3, 1, 4
+    )
+  , df_query_rows = 
+    df_occupations %>% 
+    filter(
+      occupation %in% c(
+        'Mechanical Engineers',
+        'Physicists',
+        'Credit Analysts',
+        'Dishwashers'
+      )
+    ) %>% 
+    slice(
+      2, 3, 1, 4
+    )
+  , chr_method = 'euclidean'
+  # , chr_method = 'bvls'
+  # , chr_method = 'pearson'
+  # , chr_method = 'logit'
+  # , chr_method = 'probit'
+  
+  # , chr_weights = 'unweighted'
+  # , chr_weights = 'linear'
+  # , chr_weights = 'quadratic'
+  # , chr_weights = 'speciality-root'
+  , chr_weights = 'attribute-eqvl'
+  , dbl_scale_ub = 100
+  , dbl_scale_lb = 0
+  , chr_id_col = 'occupation'
+  , lgc_sort = F
+) -> list_match_euclidean
+
+list_match_euclidean$
+  mtx_similarity %>% 
+  round(2)
+
