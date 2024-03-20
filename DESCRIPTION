@@ -4,9 +4,9 @@ Title: Quantitative Career Matching
 Version: 3.0.0
 Author: Cao Bittencourt
 Maintainer: Cao Bittencourt <caobittencourt@gmail.com>
-Description: Includes various methods for estimating similarity coefficients between numeric professional profiles.
-Depends: bvls, fastglm, weights, dplyr, tidyr, purrr, atlas.kind
-Remotes: github::CaoBittencourt/atlas.kind
+Description: Includes various methods for estimating similarity coefficients between numeric career profiles.
+Depends: bvls, fastglm, weights, dplyr, tidyr, purrr, atlas.aeq
+Remotes: github::CaoBittencourt/atlas.aeq
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true

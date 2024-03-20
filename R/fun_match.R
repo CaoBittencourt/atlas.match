@@ -10,7 +10,7 @@ chr_pkg <- c(
 
 # Git packages
 chr_git <- c(
-  'CaoBittencourt' = 'atlas.kind' #Human capital indispensability coefficient
+  'CaoBittencourt' = 'atlas.aeq' #Human capital indispensability coefficient
 )
 
 # Activate / install CRAN packages
@@ -92,7 +92,7 @@ fun_match_weights <- function(
     
   } else if(chr_weights == 'attribute-eqvl'){
     # Attribute equivalence weights
-    fun_kind_indispensability(
+    fun_aeq_aequivalence(
       dbl_profile = dbl_var
       , dbl_generality = 
         dbl_generality
