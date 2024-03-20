@@ -1,54 +1,54 @@
-# [SETUP] -----------------------------------------------------------------
-# - Packages ----------------------------------------------------------------
-# CRAN packages
-chr_pkg <- c(
-  'bvls', 'fastglm', 'weights' #Regression models
-  , 'devtools' #GitHub packages (temp)
-  , 'readr' #Read data (temp)
-  , 'dplyr', 'tidyr', 'purrr' #Data wrangling
-)
-
-# Git packages
-chr_git <- c(
-  'CaoBittencourt' = 'atlas.aeq' #Human capital indispensability coefficient
-)
-
-# Activate / install CRAN packages
-lapply(
-  chr_pkg
-  , function(pkg){
-    
-    if(!require(pkg, character.only = T)){
-      
-      install.packages(pkg)
-      
-    }
-    
-    require(pkg, character.only = T)
-    
-  }
-)
-
-# Activate / install Git packages
-Map(
-  function(git, profile){
-    
-    if(!require(git, character.only = T)){
-      
-      install_github(
-        paste0(profile, '/', git)
-        , upgrade = F
-        , force = T
-      )
-      
-    }
-    
-    require(git, character.only = T)
-    
-  }
-  , git = chr_git
-  , profile = names(chr_git)
-)
+# # [SETUP] -----------------------------------------------------------------
+# # - Packages ----------------------------------------------------------------
+# # CRAN packages
+# chr_pkg <- c(
+#   'bvls', 'fastglm', 'weights' #Regression models
+#   , 'devtools' #GitHub packages (temp)
+#   , 'readr' #Read data (temp)
+#   , 'dplyr', 'tidyr', 'purrr' #Data wrangling
+# )
+# 
+# # Git packages
+# chr_git <- c(
+#   'CaoBittencourt' = 'atlas.aeq' #Human capital indispensability coefficient
+# )
+# 
+# # Activate / install CRAN packages
+# lapply(
+#   chr_pkg
+#   , function(pkg){
+# 
+#     if(!require(pkg, character.only = T)){
+# 
+#       install.packages(pkg)
+# 
+#     }
+# 
+#     require(pkg, character.only = T)
+# 
+#   }
+# )
+# 
+# # Activate / install Git packages
+# Map(
+#   function(git, profile){
+# 
+#     if(!require(git, character.only = T)){
+# 
+#       install_github(
+#         paste0(profile, '/', git)
+#         , upgrade = F
+#         , force = T
+#       )
+# 
+#     }
+# 
+#     require(git, character.only = T)
+# 
+#   }
+#   , git = chr_git
+#   , profile = names(chr_git)
+# )
 
 # [MATCHING FUNCTIONS] -------------------------------------------------------------
 # - Regression weights --------------------------------------------
@@ -944,64 +944,64 @@ fun_match_similarity <- function(
   
 }
 
-# [TEST] ------------------------------------------------------------------
-# - Data ------------------------------------------------------------------
-df_occupations <- read_csv('/home/Cao/Storage/github/atlas-research/data/occupations/df_occupations_2022.csv')
-
-df_occupations %>% 
-  select(
-    occupation
-    , starts_with('skl_'),
-    , starts_with('abl_'),
-    , starts_with('knw_')
-  ) -> df_occupations
-
-# - fun_match_similarity -----------------------------------
-fun_match_similarity(
-  df_data_rows = 
-    df_occupations %>% 
-    filter(
-      occupation %in% c(
-        'Mechanical Engineers',
-        'Physicists',
-        'Credit Analysts',
-        'Dishwashers'
-      )
-    ) %>% 
-    slice(
-      2, 3, 1, 4
-    )
-  , df_query_rows = 
-    df_occupations %>% 
-    filter(
-      occupation %in% c(
-        'Mechanical Engineers',
-        'Physicists',
-        'Credit Analysts',
-        'Dishwashers'
-      )
-    ) %>% 
-    slice(
-      2, 3, 1, 4
-    )
-  , chr_method = 'euclidean'
-  # , chr_method = 'bvls'
-  # , chr_method = 'pearson'
-  # , chr_method = 'logit'
-  # , chr_method = 'probit'
-  
-  # , chr_weights = 'unweighted'
-  # , chr_weights = 'linear'
-  # , chr_weights = 'quadratic'
-  # , chr_weights = 'speciality-root'
-  , chr_weights = 'attribute-eqvl'
-  , dbl_scale_ub = 100
-  , dbl_scale_lb = 0
-  , chr_id_col = 'occupation'
-  , lgc_sort = F
-) -> list_match_euclidean
-
-list_match_euclidean$
-  mtx_similarity %>% 
-  round(2)
-
+# # [TEST] ------------------------------------------------------------------
+# # - Data ------------------------------------------------------------------
+# df_occupations <- read_csv('/home/Cao/Storage/github/atlas-research/data/occupations/df_occupations_2022.csv')
+# 
+# df_occupations %>%
+#   select(
+#     occupation
+#     , starts_with('skl_'),
+#     , starts_with('abl_'),
+#     , starts_with('knw_')
+#   ) -> df_occupations
+# 
+# # - fun_match_similarity -----------------------------------
+# fun_match_similarity(
+#   df_data_rows =
+#     df_occupations %>%
+#     filter(
+#       occupation %in% c(
+#         'Mechanical Engineers',
+#         'Physicists',
+#         'Credit Analysts',
+#         'Dishwashers'
+#       )
+#     ) %>%
+#     slice(
+#       2, 3, 1, 4
+#     )
+#   , df_query_rows =
+#     df_occupations %>%
+#     filter(
+#       occupation %in% c(
+#         'Mechanical Engineers',
+#         'Physicists',
+#         'Credit Analysts',
+#         'Dishwashers'
+#       )
+#     ) %>%
+#     slice(
+#       2, 3, 1, 4
+#     )
+#   , chr_method = 'euclidean'
+#   # , chr_method = 'bvls'
+#   # , chr_method = 'pearson'
+#   # , chr_method = 'logit'
+#   # , chr_method = 'probit'
+# 
+#   # , chr_weights = 'unweighted'
+#   # , chr_weights = 'linear'
+#   # , chr_weights = 'quadratic'
+#   # , chr_weights = 'speciality-root'
+#   , chr_weights = 'attribute-eqvl'
+#   , dbl_scale_ub = 100
+#   , dbl_scale_lb = 0
+#   , chr_id_col = 'occupation'
+#   , lgc_sort = F
+# ) -> list_match_euclidean
+# 
+# list_match_euclidean$
+#   mtx_similarity %>%
+#   round(2)
+# 
