@@ -466,6 +466,120 @@ fun_match_logit <- function(
   
 }
 
+# # - Euclidean matching ----------------------------------------------------
+# fun_match_euclidean <- function(
+#     df_data_cols
+#     , dbl_query
+#     , dbl_scale_ub = 100
+#     , dbl_scale_lb = 0
+#     , df_weights = NULL
+# ){
+#   
+#   # Arguments validation
+#   stopifnot(
+#     "'df_data_cols' must be a data frame." = 
+#       is.data.frame(df_data_cols)
+#   )
+#   
+#   stopifnot(
+#     "'dbl_query' must be numeric." =
+#       all(
+#         is.numeric(dbl_query)
+#         , length(dbl_query) ==
+#           nrow(df_data_cols)
+#       )
+#   )
+#   
+#   stopifnot(
+#     "'df_weights' must be either NULL or a numeric data frame." = 
+#       any(
+#         all(map_lgl(df_weights, is.numeric))
+#         , is.null(df_weights)
+#       )
+#   )
+#   
+#   # Data wrangling
+#   dbl_scale_ub[[1]] -> dbl_scale_ub
+#   
+#   dbl_scale_lb[[1]] -> dbl_scale_lb
+#   
+#   t(df_data_cols) -> df_data_rows
+#   
+#   if(length(df_weights)){
+#     
+#     t(df_weights) -> df_weights
+#     
+#   }
+#   
+#   as_tibble(t(dbl_query)) -> df_query_rows
+#   
+#   rm(df_data_cols)
+#   rm(dbl_query)
+#   
+#   # Euclidean distance
+#   if(length(df_weights)){
+#     
+#     # Weighted Euclidean distance
+#     df_query_rows[rep(
+#       1, nrow(df_data_rows)
+#     ), ] -> df_query_rows
+#     
+#     df_weights * (
+#       df_data_rows - 
+#         df_query_rows
+#     ) ^ 2 -> df_dist
+#     
+#     rm(df_query_rows)
+#     
+#     sqrt(rowSums(df_dist)) -> df_dist
+#     
+#     # Normalize by maximum distance
+#     df_dist / sqrt(rowSums(
+#       df_weights * 
+#         pmax(
+#           dbl_scale_ub - df_data_rows,
+#           df_data_rows - dbl_scale_lb
+#         ) ^ 2
+#     )) -> dbl_dist
+#     
+#   } else {
+#     
+#     # Unweighted Euclidean distance
+#     df_query_rows[rep(
+#       1, nrow(df_data_rows)
+#     ), ] -> df_query_rows
+#     
+#     (
+#       df_data_rows - 
+#         df_query_rows
+#     ) ^ 2 -> df_dist
+#     
+#     rm(df_query_rows)
+#     
+#     sqrt(rowSums(df_dist)) -> df_dist
+#     
+#     # Normalize by maximum distance
+#     df_dist / sqrt(rowSums(
+#       pmax(
+#         dbl_scale_ub - df_data_rows,
+#         df_data_rows - dbl_scale_lb
+#       ) ^ 2
+#     )) -> dbl_dist 
+#     
+#   }
+#   
+#   rm(df_dist)
+#   rm(df_weights)
+#   rm(df_data_rows)
+#   
+#   # Calculate similarity
+#   1 - dbl_dist -> dbl_similarity
+#   
+#   # Output
+#   return(dbl_similarity)
+#   
+# }
+
 # - Euclidean matching ----------------------------------------------------
 fun_match_euclidean <- function(
     df_data_cols
@@ -473,6 +587,7 @@ fun_match_euclidean <- function(
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
     , df_weights = NULL
+    , lgc_overqualification_sub = T
 ){
   
   # Arguments validation
@@ -524,10 +639,22 @@ fun_match_euclidean <- function(
       1, nrow(df_data_rows)
     ), ] -> df_query_rows
     
-    df_weights * (
-      df_data_rows - 
-        df_query_rows
-    ) ^ 2 -> df_dist
+    if(lgc_overqualification_sub){
+      
+      df_weights * (pmax(
+        df_query_rows - 
+          df_data_rows
+        , 0
+      )) ^ 2 -> df_dist
+      
+    } else {
+      
+      df_weights * (
+        df_data_rows - 
+          df_query_rows
+      ) ^ 2 -> df_dist
+      
+    }
     
     rm(df_query_rows)
     
