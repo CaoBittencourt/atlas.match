@@ -1,7 +1,7 @@
 Package: atlas.match
 Type: Package
 Title: Quantitative Career Matching
-Version: 3.0.1
+Version: 3.0.2
 Author: Cao Bittencourt
 Maintainer: Cao Bittencourt <caobittencourt@gmail.com>
 Description: Includes various methods for estimating similarity coefficients between numeric career profiles.

@@ -477,7 +477,7 @@ fun_match_logit <- function(
 #   
 #   # Arguments validation
 #   stopifnot(
-#     "'df_data_cols' must be a data frame." = 
+#     "'df_data_cols' must be a data frame." =
 #       is.data.frame(df_data_cols)
 #   )
 #   
@@ -491,7 +491,7 @@ fun_match_logit <- function(
 #   )
 #   
 #   stopifnot(
-#     "'df_weights' must be either NULL or a numeric data frame." = 
+#     "'df_weights' must be either NULL or a numeric data frame." =
 #       any(
 #         all(map_lgl(df_weights, is.numeric))
 #         , is.null(df_weights)
@@ -525,7 +525,7 @@ fun_match_logit <- function(
 #     ), ] -> df_query_rows
 #     
 #     df_weights * (
-#       df_data_rows - 
+#       df_data_rows -
 #         df_query_rows
 #     ) ^ 2 -> df_dist
 #     
@@ -535,7 +535,7 @@ fun_match_logit <- function(
 #     
 #     # Normalize by maximum distance
 #     df_dist / sqrt(rowSums(
-#       df_weights * 
+#       df_weights *
 #         pmax(
 #           dbl_scale_ub - df_data_rows,
 #           df_data_rows - dbl_scale_lb
@@ -550,7 +550,7 @@ fun_match_logit <- function(
 #     ), ] -> df_query_rows
 #     
 #     (
-#       df_data_rows - 
+#       df_data_rows -
 #         df_query_rows
 #     ) ^ 2 -> df_dist
 #     
@@ -564,7 +564,7 @@ fun_match_logit <- function(
 #         dbl_scale_ub - df_data_rows,
 #         df_data_rows - dbl_scale_lb
 #       ) ^ 2
-#     )) -> dbl_dist 
+#     )) -> dbl_dist
 #     
 #   }
 #   
@@ -587,12 +587,12 @@ fun_match_euclidean <- function(
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
     , df_weights = NULL
-    , lgc_overqualification_sub = T
+    , lgc_overqualification_sub = F
 ){
   
   # Arguments validation
   stopifnot(
-    "'df_data_cols' must be a data frame." = 
+    "'df_data_cols' must be a data frame." =
       is.data.frame(df_data_cols)
   )
   
@@ -606,7 +606,7 @@ fun_match_euclidean <- function(
   )
   
   stopifnot(
-    "'df_weights' must be either NULL or a numeric data frame." = 
+    "'df_weights' must be either NULL or a numeric data frame." =
       any(
         all(map_lgl(df_weights, is.numeric))
         , is.null(df_weights)
@@ -626,74 +626,46 @@ fun_match_euclidean <- function(
     
   }
   
+  if(!length(df_weights)){
+    
+    1 -> df_weights
+    
+  }
+  
   as_tibble(t(dbl_query)) -> df_query_rows
   
   rm(df_data_cols)
   rm(dbl_query)
   
   # Euclidean distance
-  if(length(df_weights)){
+  # Weighted Euclidean distance
+  df_query_rows[rep(
+    1, nrow(df_data_rows)
+  ), ] -> df_query_rows
+  
+  df_weights * (
+    df_data_rows -
+      df_query_rows
+  ) ^ 2 -> df_dist
+  
+  if(lgc_overqualification_sub){
     
-    # Weighted Euclidean distance
-    df_query_rows[rep(
-      1, nrow(df_data_rows)
-    ), ] -> df_query_rows
+    df_dist[df_dist < 0] <- df_dist
     
-    if(lgc_overqualification_sub){
-      
-      df_weights * (pmax(
-        df_query_rows - 
-          df_data_rows
-        , 0
-      )) ^ 2 -> df_dist
-      
-    } else {
-      
-      df_weights * (
-        df_data_rows - 
-          df_query_rows
-      ) ^ 2 -> df_dist
-      
-    }
-    
-    rm(df_query_rows)
-    
-    sqrt(rowSums(df_dist)) -> df_dist
-    
-    # Normalize by maximum distance
-    df_dist / sqrt(rowSums(
-      df_weights * 
-        pmax(
-          dbl_scale_ub - df_data_rows,
-          df_data_rows - dbl_scale_lb
-        ) ^ 2
-    )) -> dbl_dist
-    
-  } else {
-    
-    # Unweighted Euclidean distance
-    df_query_rows[rep(
-      1, nrow(df_data_rows)
-    ), ] -> df_query_rows
-    
-    (
-      df_data_rows - 
-        df_query_rows
-    ) ^ 2 -> df_dist
-    
-    rm(df_query_rows)
-    
-    sqrt(rowSums(df_dist)) -> df_dist
-    
-    # Normalize by maximum distance
-    df_dist / sqrt(rowSums(
+  }
+  
+  rm(df_query_rows)
+  
+  sqrt(rowSums(df_dist)) -> df_dist
+  
+  # Normalize by maximum distance
+  df_dist / sqrt(rowSums(
+    df_weights *
       pmax(
         dbl_scale_ub - df_data_rows,
         df_data_rows - dbl_scale_lb
       ) ^ 2
-    )) -> dbl_dist 
-    
-  }
+  )) -> dbl_dist
   
   rm(df_dist)
   rm(df_weights)
