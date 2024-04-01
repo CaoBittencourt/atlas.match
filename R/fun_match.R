@@ -587,7 +587,7 @@ fun_match_euclidean <- function(
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
     , df_weights = NULL
-    , lgc_overqualification_sub = F
+    , lgc_overqualification_sub = T
 ){
   
   # Arguments validation
@@ -637,22 +637,22 @@ fun_match_euclidean <- function(
   rm(df_data_cols)
   rm(dbl_query)
   
-  # Euclidean distance
   # Weighted Euclidean distance
   df_query_rows[rep(
     1, nrow(df_data_rows)
   ), ] -> df_query_rows
   
-  df_weights * (
-    df_data_rows -
-      df_query_rows
-  ) ^ 2 -> df_dist
+  df_data_rows - df_query_rows  -> df_dist
   
   if(lgc_overqualification_sub){
     
-    df_dist[df_dist < 0] <- df_dist
+    df_dist[df_dist < 0] <- 0
     
   }
+  
+  df_dist ^ 2 -> df_dist
+  
+  df_weights * df_dist -> df_dist
   
   rm(df_query_rows)
   
