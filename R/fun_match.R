@@ -421,7 +421,7 @@ fun_match_pearson <- function(
 # - Kendau's tau correlation matching -------------------------------------------
 
 
-# - [same results when using lgc_overqualification_sub] Logistic regression matching ------------------------------------------
+# - Logistic regression matching ------------------------------------------
 fun_match_logit <- function(
     df_data_cols
     , dbl_query
@@ -431,32 +431,32 @@ fun_match_logit <- function(
     , df_weights = NULL
     , lgc_overqualification_sub = F
 ){
-  
+
   # Arguments validation
   stopifnot(
-    "'df_data_cols' must be a data frame." = 
+    "'df_data_cols' must be a data frame." =
       is.data.frame(df_data_cols)
   )
-  
+
   stopifnot(
-    "'dbl_query' must be numeric." = 
+    "'dbl_query' must be numeric." =
       all(
         is.numeric(dbl_query)
         , length(dbl_query) ==
           nrow(df_data_cols)
       )
   )
-  
+
   stopifnot(
     "'dbl_scale_ub' must be numeric." =
       is.numeric(dbl_scale_ub)
   )
-  
+
   stopifnot(
     "'dbl_scale_lb' must be numeric." =
       is.numeric(dbl_scale_lb)
   )
-  
+
   stopifnot(
     "'chr_method' must be either 'logit' or 'probit'." =
       any(
@@ -464,26 +464,26 @@ fun_match_logit <- function(
         chr_method == 'probit'
       )
   )
-  
+
   stopifnot(
-    "'df_weights' must be either NULL or a numeric data frame." = 
+    "'df_weights' must be either NULL or a numeric data frame." =
       any(
         all(map_lgl(df_weights, is.numeric))
         , is.null(df_weights)
       )
   )
-  
+
   # Data wrangling
   dbl_scale_ub[[1]] -> dbl_scale_ub
-  
+
   dbl_scale_lb[[1]] -> dbl_scale_lb
-  
+
   as.integer(dbl_scale_ub) -> dbl_scale_ub
-  
+
   as.integer(dbl_scale_lb) -> dbl_scale_lb
-  
+
   chr_method[[1]] -> chr_method
-  
+
   # Convert query to a Bernoulli variable
   list_c(map(
     .x = as.integer(dbl_query[,])
@@ -493,9 +493,9 @@ fun_match_logit <- function(
       ))
     )
   )) -> int_query_bernoulli
-  
+
   rm(dbl_query)
-  
+
   # Convert data to a Bernoulli variable
   map(
     .x = df_data_cols
@@ -505,16 +505,16 @@ fun_match_logit <- function(
         , ~ rep(
           c(1,0), times = ceiling(c(
             .x, (dbl_scale_ub - dbl_scale_lb) - .x
-          )) 
+          ))
         )
       )))
   ) -> list_data_bernoulli
-  
+
   rm(df_data_cols)
-  
+
   # Logistic regression
   if(!length(df_weights)){
-    
+
     # Run logistic regression matching without weights
     map_dbl(
       .x = list_data_bernoulli
@@ -530,17 +530,17 @@ fun_match_logit <- function(
         )
       ))
     ) -> dbl_similarity
-    
+
   } else {
-    
+
     # Repeat df_weights' rows
     df_weights[rep(
       1:nrow(df_weights)
-      , each = 
-        dbl_scale_ub - 
+      , each =
+        dbl_scale_ub -
         dbl_scale_lb
     ), ] -> df_weights
-    
+
     # Run logistic regression matching with weights
     map2_dbl(
       .x = list_data_bernoulli
@@ -557,17 +557,17 @@ fun_match_logit <- function(
         ), weights = .y
       ))
     ) -> dbl_similarity
-    
+
   }
-  
+
   # Extract probability
   exp(dbl_similarity) /
     (1 + exp(dbl_similarity)) ->
     dbl_similarity
-  
+
   # Output
   return(dbl_similarity)
-  
+
 }
 
 # - Euclidean matching ----------------------------------------------------
