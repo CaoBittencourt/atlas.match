@@ -421,7 +421,7 @@ fun_match_pearson <- function(
 # - Kendau's tau correlation matching -------------------------------------------
 
 
-# - Logistic regression matching ------------------------------------------
+# - [same results when using lgc_overqualification_sub] Logistic regression matching ------------------------------------------
 fun_match_logit <- function(
     df_data_cols
     , dbl_query
@@ -518,18 +518,17 @@ fun_match_logit <- function(
     # Run logistic regression matching without weights
     map_dbl(
       .x = list_data_bernoulli
-      , ~
-        coef(fastglmPure(
-          x = .x
-          , y = int_query_bernoulli * (
-            .x ^ as.numeric(
-              lgc_overqualification_sub
-            )
+      , ~ coef(fastglmPure(
+        x = .x
+        , y = int_query_bernoulli * (
+          .x ^ as.numeric(
+            lgc_overqualification_sub
           )
-          , family = binomial(
-            link = 'logit'
-          )
-        ))
+        )
+        , family = binomial(
+          link = chr_method
+        )
+      ))
     ) -> dbl_similarity
     
   } else {
@@ -546,18 +545,17 @@ fun_match_logit <- function(
     map2_dbl(
       .x = list_data_bernoulli
       , .y = df_weights
-      , ~
-        coef(fastglmPure(
-          x = .x
-          , y = int_query_bernoulli * (
-            .x ^ as.numeric(
-              lgc_overqualification_sub
-            )
+      , ~ coef(fastglmPure(
+        x = .x
+        , y = int_query_bernoulli * (
+          .x ^ as.numeric(
+            lgc_overqualification_sub
           )
-          , family = binomial(
-            link = 'logit'
-          ), weights = .y
-        ))
+        )
+        , family = binomial(
+          link = chr_method
+        ), weights = .y
+      ))
     ) -> dbl_similarity
     
   }
