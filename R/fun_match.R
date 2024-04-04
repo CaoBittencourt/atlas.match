@@ -176,6 +176,7 @@ fun_match_bvls <- function(
     df_data_cols
     , dbl_query
     , df_weights = NULL
+    , lgc_overqualification_sub = F
 ){
   
   # Arguments validation
@@ -202,42 +203,95 @@ fun_match_bvls <- function(
   )
   
   # BVLS regression
-  if(!length(df_weights)){
+  if(lgc_overqualification_sub){
     
-    # Run BVLS regression matching without weights
-    map_dbl(
-      .x = df_data_cols
-      , ~ 
-        coef(bvls(
-          as.matrix(.x)
-          , dbl_query[,]
-          , bl = 0
-          , bu = 1
-        ))
-    ) -> dbl_similarity
+    if(!length(df_weights)){
+      
+      # Run BVLS regression matching without weights
+      map_dbl(
+        .x = df_data_cols
+        , ~ 
+          coef(bvls(
+            as.matrix(.x)
+            , if_else(
+              dbl_query[,] <= .x
+              , dbl_query[,]
+              , .x
+            )
+            , bl = 0
+            , bu = 1
+          ))
+      ) -> dbl_similarity
+      
+    } else {
+      
+      # Add weights to regression 
+      sqrt(df_weights) ->
+        df_weights
+      
+      df_data_cols *
+        df_weights ->
+        df_data_cols
+      
+      # BVLS regression matching with weights
+      map2_dbl(
+        .x = df_data_cols
+        , .y = df_weights
+        , ~
+          coef(bvls(
+            as.matrix(.x)
+            , if_else(
+              dbl_query[,] <= .x
+              , dbl_query[,]
+              , .x
+            ) * .y
+            , bl = 0
+            , bu = 1
+          ))
+      ) -> dbl_similarity
+      
+    }
     
   } else {
     
-    # Add weights to regression 
-    sqrt(df_weights) ->
-      df_weights
-    
-    df_data_cols *
-      df_weights ->
-      df_data_cols
-    
-    # BVLS regression matching with weights
-    map2_dbl(
-      .x = df_data_cols
-      , .y = df_weights
-      , ~
-        coef(bvls(
-          as.matrix(.x)
-          , dbl_query[,] * .y
-          , bl = 0
-          , bu = 1
-        ))
-    ) -> dbl_similarity
+    if(!length(df_weights)){
+      
+      # Run BVLS regression matching without weights
+      map_dbl(
+        .x = df_data_cols
+        , ~ 
+          coef(bvls(
+            as.matrix(.x)
+            , dbl_query[,]
+            , bl = 0
+            , bu = 1
+          ))
+      ) -> dbl_similarity
+      
+    } else {
+      
+      # Add weights to regression 
+      sqrt(df_weights) ->
+        df_weights
+      
+      df_data_cols *
+        df_weights ->
+        df_data_cols
+      
+      # BVLS regression matching with weights
+      map2_dbl(
+        .x = df_data_cols
+        , .y = df_weights
+        , ~
+          coef(bvls(
+            as.matrix(.x)
+            , dbl_query[,] * .y
+            , bl = 0
+            , bu = 1
+          ))
+      ) -> dbl_similarity
+      
+    }
     
   }
   
@@ -251,6 +305,7 @@ fun_match_pearson <- function(
     df_data_cols
     , dbl_query
     , df_weights = NULL
+    , lgc_overqualification_sub = F
 ){
   
   # Arguments validation
@@ -277,35 +332,81 @@ fun_match_pearson <- function(
   )
   
   # Pearson correlation
-  if(!length(df_weights)){
+  if(lgc_overqualification_sub){
     
-    # Pearson correlation matching without weights
-    map_dbl(
-      .x = df_data_cols
-      , ~ (
-        1 +
-          wtd.cors(
-            dbl_query[,]
-            , .x
-          )[,]
-      ) / 2
-    ) -> dbl_similarity
+    if(!length(df_weights)){
+      
+      # Pearson correlation matching without weights
+      map_dbl(
+        .x = df_data_cols
+        , ~ (
+          1 +
+            wtd.cors(
+              if_else(
+                dbl_query[,] <= .x
+                , dbl_query[,]
+                , .x
+              )
+              , .x
+            )[,]
+        ) / 2
+      ) -> dbl_similarity
+      
+    } else {
+      
+      # Pearson correlation matching with weights
+      map2_dbl(
+        .x = df_data_cols
+        , .y = df_weights
+        , ~ (
+          1 +
+            wtd.cors(
+              if_else(
+                dbl_query[,] <= .x
+                , dbl_query[,]
+                , .x
+              )
+              , .x
+              , weight = .y
+            )[,]
+        ) / 2
+      ) -> dbl_similarity
+      
+    }
     
   } else {
     
-    # Pearson correlation matching with weights
-    map2_dbl(
-      .x = df_data_cols
-      , .y = df_weights
-      , ~ (
-        1 +
-          wtd.cors(
-            dbl_query[,]
-            , .x
-            , weight = .y
-          )[,]
-      ) / 2
-    ) -> dbl_similarity
+    if(!length(df_weights)){
+      
+      # Pearson correlation matching without weights
+      map_dbl(
+        .x = df_data_cols
+        , ~ (
+          1 +
+            wtd.cors(
+              dbl_query[,]
+              , .x
+            )[,]
+        ) / 2
+      ) -> dbl_similarity
+      
+    } else {
+      
+      # Pearson correlation matching with weights
+      map2_dbl(
+        .x = df_data_cols
+        , .y = df_weights
+        , ~ (
+          1 +
+            wtd.cors(
+              dbl_query[,]
+              , .x
+              , weight = .y
+            )[,]
+        ) / 2
+      ) -> dbl_similarity
+      
+    }
     
   }
   
@@ -328,6 +429,7 @@ fun_match_logit <- function(
     , dbl_scale_lb
     , chr_method = c('logit', 'probit')
     , df_weights = NULL
+    , lgc_overqualification_sub = F
 ){
   
   # Arguments validation
@@ -419,16 +521,16 @@ fun_match_logit <- function(
       , ~
         coef(fastglmPure(
           x = .x
-          , y = int_query_bernoulli
+          , y = int_query_bernoulli * (
+            .x ^ as.numeric(
+              lgc_overqualification_sub
+            )
+          )
           , family = binomial(
             link = 'logit'
           )
         ))
     ) -> dbl_similarity
-    
-    exp(dbl_similarity) /
-      (1 + exp(dbl_similarity)) ->
-      dbl_similarity
     
   } else {
     
@@ -447,137 +549,28 @@ fun_match_logit <- function(
       , ~
         coef(fastglmPure(
           x = .x
-          , y = int_query_bernoulli
+          , y = int_query_bernoulli * (
+            .x ^ as.numeric(
+              lgc_overqualification_sub
+            )
+          )
           , family = binomial(
             link = 'logit'
           ), weights = .y
         ))
     ) -> dbl_similarity
     
-    exp(dbl_similarity) /
-      (1 + exp(dbl_similarity)) ->
-      dbl_similarity
-    
   }
+  
+  # Extract probability
+  exp(dbl_similarity) /
+    (1 + exp(dbl_similarity)) ->
+    dbl_similarity
   
   # Output
   return(dbl_similarity)
   
 }
-
-# # - Euclidean matching ----------------------------------------------------
-# fun_match_euclidean <- function(
-#     df_data_cols
-#     , dbl_query
-#     , dbl_scale_ub = 100
-#     , dbl_scale_lb = 0
-#     , df_weights = NULL
-# ){
-#   
-#   # Arguments validation
-#   stopifnot(
-#     "'df_data_cols' must be a data frame." =
-#       is.data.frame(df_data_cols)
-#   )
-#   
-#   stopifnot(
-#     "'dbl_query' must be numeric." =
-#       all(
-#         is.numeric(dbl_query)
-#         , length(dbl_query) ==
-#           nrow(df_data_cols)
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'df_weights' must be either NULL or a numeric data frame." =
-#       any(
-#         all(map_lgl(df_weights, is.numeric))
-#         , is.null(df_weights)
-#       )
-#   )
-#   
-#   # Data wrangling
-#   dbl_scale_ub[[1]] -> dbl_scale_ub
-#   
-#   dbl_scale_lb[[1]] -> dbl_scale_lb
-#   
-#   t(df_data_cols) -> df_data_rows
-#   
-#   if(length(df_weights)){
-#     
-#     t(df_weights) -> df_weights
-#     
-#   }
-#   
-#   as_tibble(t(dbl_query)) -> df_query_rows
-#   
-#   rm(df_data_cols)
-#   rm(dbl_query)
-#   
-#   # Euclidean distance
-#   if(length(df_weights)){
-#     
-#     # Weighted Euclidean distance
-#     df_query_rows[rep(
-#       1, nrow(df_data_rows)
-#     ), ] -> df_query_rows
-#     
-#     df_weights * (
-#       df_data_rows -
-#         df_query_rows
-#     ) ^ 2 -> df_dist
-#     
-#     rm(df_query_rows)
-#     
-#     sqrt(rowSums(df_dist)) -> df_dist
-#     
-#     # Normalize by maximum distance
-#     df_dist / sqrt(rowSums(
-#       df_weights *
-#         pmax(
-#           dbl_scale_ub - df_data_rows,
-#           df_data_rows - dbl_scale_lb
-#         ) ^ 2
-#     )) -> dbl_dist
-#     
-#   } else {
-#     
-#     # Unweighted Euclidean distance
-#     df_query_rows[rep(
-#       1, nrow(df_data_rows)
-#     ), ] -> df_query_rows
-#     
-#     (
-#       df_data_rows -
-#         df_query_rows
-#     ) ^ 2 -> df_dist
-#     
-#     rm(df_query_rows)
-#     
-#     sqrt(rowSums(df_dist)) -> df_dist
-#     
-#     # Normalize by maximum distance
-#     df_dist / sqrt(rowSums(
-#       pmax(
-#         dbl_scale_ub - df_data_rows,
-#         df_data_rows - dbl_scale_lb
-#       ) ^ 2
-#     )) -> dbl_dist
-#     
-#   }
-#   
-#   rm(df_dist)
-#   rm(df_weights)
-#   rm(df_data_rows)
-#   
-#   # Calculate similarity
-#   1 - dbl_dist -> dbl_similarity
-#   
-#   # Output
-#   return(dbl_similarity)
-#   
-# }
 
 # - Euclidean matching ----------------------------------------------------
 fun_match_euclidean <- function(
@@ -586,6 +579,7 @@ fun_match_euclidean <- function(
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
     , df_weights = NULL
+    , lgc_overqualification_sub = F
 ){
   
   # Arguments validation
@@ -640,12 +634,19 @@ fun_match_euclidean <- function(
     1, nrow(df_data_rows)
   ), ] -> df_query_rows
   
-  df_weights * (
-    df_data_rows - 
-      df_query_rows
-  ) ^ 2 -> df_dist
+  df_data_rows - df_query_rows -> df_dist
   
   rm(df_query_rows)
+  
+  if(lgc_overqualification_sub){
+    
+    df_dist[df_dist < 0] <- 0
+    
+  }
+  
+  df_dist ^ 2 -> df_dist
+  
+  df_weights * df_dist -> df_dist
   
   sqrt(rowSums(df_dist)) -> df_dist
   
@@ -653,8 +654,10 @@ fun_match_euclidean <- function(
   df_dist / sqrt(rowSums(
     df_weights *
       pmax(
-        dbl_scale_ub - df_data_rows,
-        df_data_rows - dbl_scale_lb
+        as.numeric(!lgc_overqualification_sub) * (
+          dbl_scale_ub - df_data_rows
+        )
+        , df_data_rows - dbl_scale_lb
       ) ^ 2
   )) -> dbl_dist
   
@@ -679,6 +682,7 @@ fun_match_similarity_cols <- function(
     , dbl_scale_ub = 100
     , dbl_scale_lb = 0
     , lgc_sort = F
+    , lgc_overqualification_sub = F
 ){
   
   # Argument validation
@@ -734,6 +738,8 @@ fun_match_similarity_cols <- function(
         dbl_query
       , df_weights = 
         df_weights
+      , lgc_overqualification_sub =
+        lgc_overqualification_sub
     ) -> dbl_similarity
     
   } else if(chr_method == 'pearson') {
@@ -746,6 +752,8 @@ fun_match_similarity_cols <- function(
         dbl_query
       , df_weights = 
         df_weights
+      , lgc_overqualification_sub = 
+        lgc_overqualification_sub
     ) -> dbl_similarity
     
   }  else if(chr_method == 'spearman') {
@@ -758,6 +766,8 @@ fun_match_similarity_cols <- function(
         dbl_query
       , df_weights = 
         df_weights
+      , lgc_overqualification_sub =
+        lgc_overqualification_sub
     ) -> dbl_similarity
     
   }  else if(chr_method == 'kendau') {
@@ -770,6 +780,8 @@ fun_match_similarity_cols <- function(
         dbl_query
       , df_weights = 
         df_weights
+      , lgc_overqualification_sub = 
+        lgc_overqualification_sub
     ) -> dbl_similarity
     
   } else if(chr_method == 'euclidean') {
@@ -786,6 +798,8 @@ fun_match_similarity_cols <- function(
         dbl_scale_lb
       , df_weights = 
         df_weights
+      , lgc_overqualification_sub = 
+        lgc_overqualification_sub
     ) -> dbl_similarity
     
   } else {
@@ -804,6 +818,8 @@ fun_match_similarity_cols <- function(
         chr_method
       , df_weights = 
         df_weights
+      , lgc_overqualification_sub = 
+        lgc_overqualification_sub
     ) -> dbl_similarity
     
   }
@@ -812,223 +828,6 @@ fun_match_similarity_cols <- function(
   return(dbl_similarity)
   
 }
-
-# # - Similarity function (row vectors) ---------------------------------------------------
-# fun_match_similarity <- function(
-#     df_data_rows
-#     , df_query_rows
-#     , chr_method = c('bvls', 'logit', 'probit', 'pearson', 'spearman', 'kendau', 'euclidean')
-#     , chr_weights = c('linear', 'quadratic', 'speciality-root', 'attribute-eqvl')
-#     , dbl_scale_ub = 100
-#     , dbl_scale_lb = 0
-#     , chr_id_col = NULL
-#     , lgc_sort = F
-# ){
-#   
-#   # Argument validation
-#   stopifnot(
-#     "'df_data_rows' must be a data frame." =
-#       is.data.frame(df_data_rows)
-#   )
-#   
-#   stopifnot(
-#     "'df_query_rows' must be a data frame." =
-#       is.data.frame(df_query_rows)
-#   )
-#   
-#   stopifnot(
-#     "'chr_method' must be one of the following methods: 'bvls', 'logit', 'probit', 'pearson', 'spearman', 'kendau' or 'euclidean'." =
-#       any(
-#         chr_method == 'bvls',
-#         chr_method == 'logit',
-#         chr_method == 'probit',
-#         chr_method == 'pearson',
-#         chr_method == 'spearman',
-#         chr_method == 'kendau',
-#         chr_method == 'euclidean'
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'chr_weights' must be either 'unweighted, 'linear', 'quadratic', 'speciality-root', or 'attribute-eqvl'." = 
-#       any(
-#         chr_weights == 'unweighted',
-#         chr_weights == 'linear',
-#         chr_weights == 'quadratic', 
-#         chr_weights == 'speciality-root', 
-#         chr_weights == 'attribute-eqvl'
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'dbl_scale_ub' must be numeric." =
-#       is.numeric(dbl_scale_ub)
-#   )
-#   
-#   stopifnot(
-#     "'dbl_scale_lb' must be numeric." =
-#       is.numeric(dbl_scale_lb)
-#   )
-#   
-#   stopifnot(
-#     "'lgc_sort' must be either TRUE or FALSE." =
-#       all(
-#         is.logical(lgc_sort)
-#         , !is.na(lgc_sort)
-#       )
-#   )
-#   
-#   stopifnot(
-#     "'chr_id_col' must be either NULL or a character string." = 
-#       any(
-#         is.null(chr_id_col)
-#         , is.character(chr_id_col)
-#       )
-#   )
-#   
-#   # Data wrangling
-#   dbl_scale_ub[[1]] -> dbl_scale_ub
-#   
-#   dbl_scale_lb[[1]] -> dbl_scale_lb
-#   
-#   chr_method[[1]] -> chr_method
-#   
-#   chr_weights[[1]] -> chr_weights
-#   
-#   Filter(
-#     function(x){all(is.numeric(x))}
-#     , df_query_rows
-#   ) -> dbl_query
-#   
-#   # rm(df_query_rows)
-#   
-#   df_data_rows[names(
-#     dbl_query
-#   )] -> df_data_cols
-#   
-#   # Pivot data
-#   t(dbl_query) -> 
-#     dbl_query
-#   
-#   as_tibble(t(
-#     df_data_cols
-#   )) -> df_data_cols
-#   
-#   # ID column
-#   if(length(chr_id_col)){
-#     
-#     chr_id_col[[1]] -> chr_id_col
-#     
-#     df_query_rows %>%
-#       pull(!!sym(
-#         chr_id_col
-#       )) -> chr_id_query
-#     
-#     df_data_rows %>%
-#       pull(!!sym(
-#         chr_id_col
-#       )) -> chr_id_data
-#     
-#     # rm(chr_id_col)
-#     
-#   }
-#   
-#   # Weights
-#   if(any(
-#     chr_weights == 'speciality-root',
-#     chr_weights == 'attribute-eqvl'
-#   )){
-#     # Calculate skill set generality
-#     # for weighting methods that require generality
-#     map_dbl(
-#       df_data_cols
-#       , fun_gene_generality
-#     ) -> dbl_generality
-#     
-#   } else {
-#     
-#     NULL -> dbl_generality
-#     
-#   }
-#   
-#   # Apply weighting function
-#   fun_match_vweights(
-#     df_data_cols
-#     , chr_weights = 
-#       chr_weights
-#     , dbl_generality = 
-#       dbl_generality
-#   ) -> df_weights
-#   
-#   rm(chr_weights)
-#   rm(dbl_generality)
-#   
-#   # Apply similarity function
-#   dbl_query %>%
-#     as_tibble() ->
-#     df_query_cols
-#   
-#   rm(dbl_query)
-#   
-#   df_query_cols %>% 
-#     map(
-#       ~ fun_match_similarity_cols(
-#         df_data_cols = df_data_cols
-#         , dbl_query = as.matrix(.x)
-#         , chr_method = chr_method
-#         , df_weights = df_weights
-#         , dbl_scale_ub = dbl_scale_ub
-#         , dbl_scale_lb = dbl_scale_lb
-#       )
-#     ) -> list_similarity
-#   
-#   list_similarity %>% 
-#     map(
-#       ~ .x %>%
-#         set_names(
-#           chr_id_data
-#         )
-#     ) -> list_similarity
-#   
-#   rm(chr_method)
-#   rm(dbl_scale_ub)
-#   rm(dbl_scale_lb)
-#   
-#   # Similarity matrix
-#   rm(df_query_cols)
-#   rm(df_data_cols)
-#   
-#   list_similarity %>%
-#     bind_cols() %>%
-#     as.matrix() ->
-#     mtx_similarity
-#   
-#   if(length(chr_id_col)){
-#     
-#     colnames(mtx_similarity) <- chr_id_query
-#     
-#     rownames(mtx_similarity) <- chr_id_data
-#     
-#     names(list_similarity) <- chr_id_query
-#     
-#   }
-#   
-#   # Sort
-#   if(lgc_sort){
-#     
-#     list_similarity %>% 
-#       map(sort, decreasing = T) -> 
-#       list_similarity
-#     
-#   }
-#   
-#   # Output
-#   return(compact(list(
-#     'list_similarity' = list_similarity
-#     , 'mtx_similarity' = mtx_similarity
-#   )))
-#   
-# }
 
 # - Similarity function (row vectors) ---------------------------------------------------
 fun_match_similarity <- function(
@@ -1068,12 +867,12 @@ fun_match_similarity <- function(
   )
   
   stopifnot(
-    "'chr_weights' must be either 'unweighted, 'linear', 'quadratic', 'speciality-root', or 'attribute-eqvl'." = 
+    "'chr_weights' must be either 'unweighted, 'linear', 'quadratic', 'speciality-root', or 'attribute-eqvl'." =
       any(
         chr_weights == 'unweighted',
         chr_weights == 'linear',
-        chr_weights == 'quadratic', 
-        chr_weights == 'speciality-root', 
+        chr_weights == 'quadratic',
+        chr_weights == 'speciality-root',
         chr_weights == 'attribute-eqvl'
       )
   )
@@ -1105,7 +904,7 @@ fun_match_similarity <- function(
   )
   
   stopifnot(
-    "'chr_id_col' must be either NULL or a character string." = 
+    "'chr_id_col' must be either NULL or a character string." =
       any(
         is.null(chr_id_col)
         , is.character(chr_id_col)
@@ -1130,22 +929,14 @@ fun_match_similarity <- function(
     , df_query_rows
   ) -> dbl_query
   
+  # rm(df_query_rows)
+  
   df_data_rows[names(
     dbl_query
   )] -> df_data_cols
   
-  # Overqualification substitution
-  if(lgc_overqualification_sub){
-    
-    dbl_query[
-      dbl_query > 
-        df_data_cols
-    ] <- df_data_cols
-    
-  }
-  
   # Pivot data
-  t(dbl_query) -> 
+  t(dbl_query) ->
     dbl_query
   
   as_tibble(t(
@@ -1166,6 +957,8 @@ fun_match_similarity <- function(
       pull(!!sym(
         chr_id_col
       )) -> chr_id_data
+    
+    # rm(chr_id_col)
     
   }
   
@@ -1190,9 +983,9 @@ fun_match_similarity <- function(
   # Apply weighting function
   fun_match_vweights(
     df_data_cols
-    , chr_weights = 
+    , chr_weights =
       chr_weights
-    , dbl_generality = 
+    , dbl_generality =
       dbl_generality
   ) -> df_weights
   
@@ -1206,7 +999,7 @@ fun_match_similarity <- function(
   
   rm(dbl_query)
   
-  df_query_cols %>% 
+  df_query_cols %>%
     map(
       ~ fun_match_similarity_cols(
         df_data_cols = df_data_cols
@@ -1215,10 +1008,12 @@ fun_match_similarity <- function(
         , df_weights = df_weights
         , dbl_scale_ub = dbl_scale_ub
         , dbl_scale_lb = dbl_scale_lb
+        , lgc_overqualification_sub = 
+          lgc_overqualification_sub
       )
     ) -> list_similarity
   
-  list_similarity %>% 
+  list_similarity %>%
     map(
       ~ .x %>%
         set_names(
@@ -1252,8 +1047,8 @@ fun_match_similarity <- function(
   # Sort
   if(lgc_sort){
     
-    list_similarity %>% 
-      map(sort, decreasing = T) -> 
+    list_similarity %>%
+      map(sort, decreasing = T) ->
       list_similarity
     
   }
@@ -1263,6 +1058,31 @@ fun_match_similarity <- function(
     'list_similarity' = list_similarity
     , 'mtx_similarity' = mtx_similarity
   )))
+  
+}
+
+# - Hireability function --------------------------------------------------
+fun_match_hireability  <- function(
+    df_data_rows
+    , df_query_rows
+    , chr_weights = c('linear', 'quadratic', 'speciality-root', 'attribute-eqvl')
+    , dbl_scale_ub = 100
+    , dbl_scale_lb = 0
+    , chr_id_col = NULL
+    , lgc_sort = F
+){
+  
+  # Arguments validated in main function
+  
+  # Match call
+  call_list <- match.call()
+  
+  call_list[[1]] <- fun_match_similarity
+  
+  call_list$chr_method <- 'euclidean'
+  call_list$lgc_overqualification_sub <- T
+  
+  list_matching <- eval.parent(call_list)
   
 }
 
