@@ -1059,31 +1059,6 @@ fun_match_similarity <- function(
   
 }
 
-# - Hireability function --------------------------------------------------
-fun_match_hireability  <- function(
-    df_data_rows
-    , df_query_rows
-    , chr_weights = c('linear', 'quadratic', 'speciality-root', 'attribute-eqvl')
-    , dbl_scale_ub = 100
-    , dbl_scale_lb = 0
-    , chr_id_col = NULL
-    , lgc_sort = F
-){
-  
-  # Arguments validated in main function
-  
-  # Match call
-  call_list <- match.call()
-  
-  call_list[[1]] <- fun_match_similarity
-  
-  call_list$chr_method <- 'euclidean'
-  call_list$lgc_overqualification_sub <- T
-  
-  list_matching <- eval.parent(call_list)
-  
-}
-
 # # [TEST] ------------------------------------------------------------------
 # # - Data ------------------------------------------------------------------
 # df_occupations <- read_csv('/home/Cao/Storage/github/atlas-research/data/occupations/df_occupations_2022.csv')
